@@ -2,7 +2,7 @@
 
 Deliver to the inner suburbs every weekday, the city three days a week, and the Hills on Thursdays and Saturdays for $4 more.
 
-![Slots for 15 Main St, Hahndorf: Thursday 19 selected, Monday to Wednesday and Friday say Not in your area, and every slot shows +$4.00; the order summary shows $19.00 delivery](/examples/zone-fees.jpg)
+![Choose a delivery time for an Adelaide Hills address: Thursday 19 selected, Monday to Wednesday and Friday say Not in your area, Sunday is closed, and every slot shows +$4.00; 10am – 12pm is chosen](/examples/zone-fees.jpg)
 
 ## 1. Draw the zones
 

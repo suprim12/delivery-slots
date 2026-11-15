@@ -2,7 +2,7 @@
 
 Hourly pickup times, from 9am to 6pm, bookable until an hour before. Customers can collect the same day.
 
-![Pick up in store chosen, with Tuesday 17 selected and hourly pickup times from 9 – 10am to 5 – 6pm; 1 – 2pm is chosen and shown in the order summary](/examples/click-and-collect.jpg)
+![Choose a pickup time: Sunday 15 closed, Monday 16 selected, and hourly pickup times from 9 – 10am to 5 – 6pm; 1 – 2pm is chosen](/examples/click-and-collect.jpg)
 
 ## 1. The shipping method
 

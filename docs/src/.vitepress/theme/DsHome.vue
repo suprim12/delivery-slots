@@ -167,8 +167,8 @@ const pickerCmd = `{% for day in cart.deliverySlotDays %}
 
 const examples = [
   { href: '/examples/zone-fees', img: '/examples/zone-fees.jpg', name: 'Zone days and fees', line: 'The Hills on Thursdays and Saturdays, for $4 more.', alt: 'Slots for an Adelaide Hills address: Thursday chosen, other weekdays not in your area, every slot +$4' },
-  { href: '/examples/click-and-collect', img: '/examples/click-and-collect.jpg', name: 'Click and collect', line: 'Hourly pickup times, the same day, ready in an hour.', alt: 'Pick up in store chosen, with hourly pickup times from 9am to 6pm' },
-  { href: '/examples/javascript-picker', img: '/examples/javascript-picker.jpg', name: 'Slot picker in JavaScript', line: 'Loads and holds slots without a page load.', alt: 'A row of days and six time buttons, 10am – 12pm chosen with 2 left' },
+  { href: '/examples/click-and-collect', img: '/examples/click-and-collect.jpg', name: 'Click and collect', line: 'Hourly pickup times, the same day, ready in an hour.', alt: 'Choose a pickup time: hourly pickup times from 9am to 6pm, with 1 – 2pm chosen' },
+  { href: '/examples/javascript-picker', img: '/examples/javascript-picker.jpg', name: 'Slot picker in JavaScript', line: 'Loads and holds slots without a page load.', alt: 'A row of days and six two-hour slots, each marked Available, with 10am – 12pm chosen' },
 ]
 </script>
 

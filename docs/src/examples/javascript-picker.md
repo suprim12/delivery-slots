@@ -2,7 +2,7 @@
 
 A picker that loads slots and saves the chosen one without reloading the page, using the [JSON actions](/guides/javascript). Use it in a single-page checkout, or alongside a headless front end on the same domain.
 
-![Days from Sun 15 (greyed out) to Sat 21, with Tue 17 selected and its six slots below; 10am – 12pm is chosen and shows 2 left](/examples/javascript-picker.jpg)
+![A row of days from Mon 16 to Sun 22 (greyed out), with Mon 16 selected and its six two-hour slots below, each marked Available; 10am – 12pm is chosen and confirmed underneath](/examples/javascript-picker.jpg)
 
 - The days and slots come from `actions/delivery-slots/slots/days`, for the cart’s shipping method.
 - Clicking a time holds it for the cart straight away. If it has just filled up, the picker says so and shows the latest slots.
@@ -50,7 +50,11 @@ The cart needs a shipping method with a [schedule](/getting-started/schedules), 
     timesEl.replaceChildren(...(day ? day.slots : []).map((slot) => {
       const b = document.createElement('button');
       b.type = 'button';
-      b.textContent = slot.label + (slot.full ? ' · Full' : slot.left <= 2 ? ` · ${slot.left} left` : '');
+      const time = document.createElement('strong');
+      time.textContent = slot.label;
+      const note = document.createElement('small');
+      note.textContent = slot.full ? 'Full' : slot.left <= 2 ? `${slot.left} left` : 'Available';
+      b.append(time, note);
       b.disabled = slot.full;
       b.setAttribute('aria-pressed', slot.value === chosen);
       b.onclick = () => choose(slot.value);
@@ -103,6 +107,8 @@ body { font-family: system-ui, sans-serif; max-width: 640px; margin: 40px auto; 
 .slot-days button:disabled { background: #f1f0ec; color: #8a8c90; cursor: not-allowed; }
 .slot-times { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; margin-top: 12px; }
 .slot-times button { text-align: left; padding: 10px 12px; border: 1px solid #d8d6cf; border-radius: 10px; background: #fff; font: inherit; cursor: pointer; }
+.slot-times button strong { display: block; font-weight: 600; }
+.slot-times button small { display: block; margin-top: 2px; font-size: 0.8em; color: #6b6d72; }
 .slot-times button[aria-pressed="true"] { border: 2px solid #1f5f3f; background: #eef4ef; }
 .slot-times button:disabled { background: #f1f0ec; color: #8a8c90; cursor: not-allowed; }
 .slot-status { min-height: 1.5em; margin-top: 12px; }
