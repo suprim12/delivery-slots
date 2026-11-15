@@ -1,0 +1,136 @@
+{% extends '_layouts/cp' %}
+{% import '_includes/forms' as forms %}
+
+{% set title = method.name %}
+{% set selectedSubnavItem = 'schedules' %}
+{% set fullPageForm = true %}
+{% set crumbs = [
+	{ label: 'Delivery Slots'|t('delivery-slots'), url: url('delivery-slots') },
+	{ label: 'Schedules'|t('delivery-slots'), url: url('delivery-slots/schedules') },
+] %}
+
+{% set dayColumns = {} %}
+{% for d, name in weekdays %}
+	{% set dayColumns = dayColumns|merge({ ('d' ~ d): { type: 'checkbox', heading: name, thin: true } }) %}
+{% endfor %}
+
+{% block content %}
+	{{ actionInput('delivery-slots/schedules/save') }}
+	{{ redirectInput('delivery-slots/schedules') }}
+	{{ hiddenInput('shippingMethodId', method.id) }}
+
+	{{ forms.lightswitchField({
+		label: 'Offer delivery times'|t('delivery-slots'),
+		instructions: 'Customers choose a slot at checkout for this shipping method, and can’t pay without one.'|t('delivery-slots'),
+		name: 'enabled',
+		on: schedule.enabled,
+	}) }}
+
+	{{ forms.editableTableField({
+		label: 'Time windows'|t('delivery-slots'),
+		instructions: 'Each window runs on the ticked days. Orders per slot is how many orders each window takes on each day.'|t('delivery-slots'),
+		id: 'windows',
+		name: 'windows',
+		cols: {
+			start: { type: 'time', heading: 'Start'|t('delivery-slots') },
+			end: { type: 'time', heading: 'End'|t('delivery-slots') },
+		}|merge(dayColumns)|merge({
+			capacity: { type: 'number', heading: 'Orders per slot'|t('delivery-slots'), thin: true },
+		}),
+		rows: windowRows,
+		defaultValues: { d1: true, d2: true, d3: true, d4: true, d5: true, capacity: 10 },
+		allowAdd: true,
+		allowDelete: true,
+		allowReorder: false,
+		addRowLabel: 'Add a window'|t('delivery-slots'),
+		errors: schedule.getErrors('windows'),
+	}) }}
+
+	<hr>
+
+	<h2>{{ 'Ordering window'|t('delivery-slots') }}</h2>
+
+	{{ forms.timeField({
+		label: 'Next-day cut-off'|t('delivery-slots'),
+		instructions: 'Orders for tomorrow close at this time today. Leave blank for no cut-off.'|t('delivery-slots'),
+		name: 'cutoff',
+		value: cutoff,
+	}) }}
+
+	{{ forms.lightswitchField({
+		label: 'Same-day slots'|t('delivery-slots'),
+		instructions: 'Let customers book a slot later today.'|t('delivery-slots'),
+		name: 'sameDay',
+		on: schedule.sameDay,
+	}) }}
+
+	{{ forms.textField({
+		label: 'Book at least'|t('delivery-slots'),
+		instructions: 'Hours before a slot starts that it can still be booked.'|t('delivery-slots'),
+		name: 'leadHours',
+		type: 'number',
+		min: 0,
+		size: 4,
+		value: schedule.leadHours,
+		unit: 'hours'|t('delivery-slots'),
+	}) }}
+
+	{{ forms.textField({
+		label: 'Show slots up to'|t('delivery-slots'),
+		name: 'daysAhead',
+		type: 'number',
+		min: 1,
+		max: 90,
+		size: 4,
+		value: schedule.daysAhead,
+		unit: 'days ahead'|t('delivery-slots'),
+	}) }}
+
+	<hr>
+
+	{{ forms.editableTableField({
+		label: 'Closed days'|t('delivery-slots'),
+		instructions: 'No slots on these dates, such as public holidays. The label is shown to customers.'|t('delivery-slots'),
+		id: 'closedDates',
+		name: 'closedDates',
+		cols: {
+			date: { type: 'date', heading: 'Date'|t('delivery-slots') },
+			label: { type: 'singleline', heading: 'Label'|t('delivery-slots'), placeholder: 'Closed'|t('delivery-slots') },
+		},
+		rows: closedRows,
+		allowAdd: true,
+		allowDelete: true,
+		allowReorder: false,
+		addRowLabel: 'Add a date'|t('delivery-slots'),
+	}) }}
+
+	<hr>
+
+	{% if zonesAvailable %}
+		{{ forms.editableTableField({
+			label: 'Zones'|t('delivery-slots'),
+			instructions: 'Areas drawn with Geo Maps. When you add zones, only addresses inside one get slots, and the shipping method isn’t offered elsewhere. The first matching zone is used. Leave days unticked to use the schedule’s days, and orders per slot blank for no zone limit.'|t('delivery-slots'),
+			id: 'zones',
+			name: 'zones',
+			cols: {
+				zoneId: { type: 'select', heading: 'Zone'|t('delivery-slots'), options: [{ label: '', value: '' }]|merge(zoneOptions) },
+			}|merge(dayColumns)|merge({
+				capacity: { type: 'number', heading: 'Orders per slot'|t('delivery-slots'), thin: true },
+				fee: { type: 'number', heading: 'Slot fee'|t('delivery-slots'), thin: true },
+			}),
+			rows: zoneRows,
+			allowAdd: true,
+			allowDelete: true,
+			allowReorder: true,
+			addRowLabel: 'Add a zone'|t('delivery-slots'),
+		}) }}
+		{% if not zoneOptions|length %}
+			<p class="light">{{ 'Draw areas in a Geo Maps field, such as in a Delivery Zones section, to use them here.'|t('delivery-slots') }}</p>
+		{% endif %}
+	{% else %}
+		<div class="field">
+			<div class="heading"><label>{{ 'Zones'|t('delivery-slots') }}</label></div>
+			<p class="light">{{ 'Install Geo Maps 1.4 or later to draw delivery zones and give each one its own days, limits and fee.'|t('delivery-slots') }}</p>
+		</div>
+	{% endif %}
+{% endblock %}

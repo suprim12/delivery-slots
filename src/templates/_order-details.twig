@@ -1,0 +1,13 @@
+<div class="meta read-only" style="margin-top: var(--m, 14px);">
+	<div class="data">
+		<h5 class="heading">{{ slot.isBooked ? 'Delivery time'|t('delivery-slots') : 'Delivery time (held)'|t('delivery-slots') }}</h5>
+		<div class="value">{{ slot.label }}</div>
+	</div>
+	{% set zone = slot.zone %}
+	{% if zone %}
+		<div class="data">
+			<h5 class="heading">{{ 'Zone'|t('delivery-slots') }}</h5>
+			<div class="value">{{ zone.title }}</div>
+		</div>
+	{% endif %}
+</div>

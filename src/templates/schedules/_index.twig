@@ -1,0 +1,42 @@
+{% extends '_layouts/cp' %}
+{% set title = 'Schedules'|t('delivery-slots') %}
+{% set selectedSubnavItem = 'schedules' %}
+
+{% block content %}
+	<p>{{ 'Choose a shipping method to set its delivery or pickup times. Shipping methods are set up in Commerce → Store Management.'|t('delivery-slots') }}</p>
+
+	{% for row in stores %}
+		{% if multiStore %}<h2>{{ row.store.name }}</h2>{% endif %}
+		{% if row.methods|length %}
+			<table class="data fullwidth">
+				<thead>
+					<tr>
+						<th scope="col">{{ 'Shipping method'|t('delivery-slots') }}</th>
+						<th scope="col">{{ 'Slots'|t('delivery-slots') }}</th>
+						<th scope="col">{{ 'Windows'|t('delivery-slots') }}</th>
+						<th scope="col">{{ 'Zones'|t('delivery-slots') }}</th>
+					</tr>
+				</thead>
+				<tbody>
+					{% for item in row.methods %}
+						{% set schedule = item.schedule %}
+						<tr>
+							<th scope="row"><a href="{{ url('delivery-slots/schedules/' ~ item.method.id) }}">{{ item.method.name }}</a></th>
+							<td>
+								{% if schedule and schedule.enabled %}
+									<span class="status enabled"></span>{{ 'On'|t('delivery-slots') }}
+								{% else %}
+									<span class="status disabled"></span>{{ 'Off'|t('delivery-slots') }}
+								{% endif %}
+							</td>
+							<td>{{ schedule ? schedule.windows|length : '—' }}</td>
+							<td>{{ schedule and schedule.zones|length ? schedule.zones|length : '—' }}</td>
+						</tr>
+					{% endfor %}
+				</tbody>
+			</table>
+		{% else %}
+			<p class="light">{{ 'This store has no shipping methods yet.'|t('delivery-slots') }}</p>
+		{% endif %}
+	{% endfor %}
+{% endblock %}

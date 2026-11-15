@@ -1,0 +1,58 @@
+{
+  "name": "suprim/delivery-slots",
+  "description": "Delivery and pickup time slots for Craft Commerce: a slot picker at checkout, capacity per slot, cut-off times, closed days, zones and a daily run sheet.",
+  "type": "craft-plugin",
+  "license": "proprietary",
+  "authors": [
+    {
+      "name": "suprim",
+      "homepage": "https://suprim.com.au"
+    }
+  ],
+  "support": {
+    "email": "support@suprim.com.au"
+  },
+  "require": {
+    "php": ">=8.2",
+    "craftcms/cms": "^5.6.0",
+    "craftcms/commerce": "^5.0"
+  },
+  "require-dev": {
+    "craftcms/ecs": "dev-main",
+    "craftcms/phpstan": "dev-main",
+    "phpstan/phpstan": "^2.1",
+    "suprim/geomaps": "^1.4"
+  },
+  "suggest": {
+    "suprim/geomaps": "Draw delivery zones on a map and give each zone its own days, capacity and fee."
+  },
+  "autoload": {
+    "psr-4": {
+      "suprim\\deliveryslots\\": "src/"
+    }
+  },
+  "extra": {
+    "handle": "delivery-slots",
+    "name": "Delivery Slots",
+    "developer": "suprim",
+    "class": "suprim\\deliveryslots\\Plugin",
+    "developerUrl": "https://suprim.com.au",
+    "developerEmail": "support@suprim.com.au"
+  },
+  "scripts": {
+    "check-cs": "ecs check --ansi",
+    "fix-cs": "ecs check --ansi --fix",
+    "phpstan": "phpstan --memory-limit=1G"
+  },
+  "config": {
+    "sort-packages": true,
+    "platform": {
+      "php": "8.2"
+    },
+    "allow-plugins": {
+      "yiisoft/yii2-composer": true,
+      "craftcms/plugin-installer": true
+    }
+  },
+  "keywords": ["craft", "cms", "craftcms", "craft-plugin", "commerce", "delivery", "time slots", "click and collect", "pickup", "local delivery", "scheduling"]
+}

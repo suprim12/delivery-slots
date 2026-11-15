@@ -1,0 +1,62 @@
+{% extends '_layouts/cp' %}
+{% set title = 'Run sheet'|t('delivery-slots') %}
+{% set selectedSubnavItem = 'run-sheet' %}
+{% set query = methodId ? { method: methodId } : {} %}
+
+{% block actionButton %}
+	<a class="btn" href="{{ url('delivery-slots/run-sheet/export', query|merge({ date: date|date('Y-m-d') })) }}">{{ 'Export CSV'|t('delivery-slots') }}</a>
+	<a class="btn submit" href="{{ url('delivery-slots/run-sheet/print', query|merge({ date: date|date('Y-m-d') })) }}" target="_blank" rel="noopener">{{ 'Print'|t('delivery-slots') }}</a>
+{% endblock %}
+
+{% block toolbar %}
+	<div class="flex">
+		<div class="btngroup">
+			<a class="btn" href="{{ url('delivery-slots/run-sheet', query|merge({ date: prev })) }}" aria-label="{{ 'Previous day'|t('delivery-slots') }}" data-icon="leftangle"></a>
+			<a class="btn" href="{{ url('delivery-slots/run-sheet', query) }}">{{ 'Today'|t('delivery-slots') }}</a>
+			<a class="btn" href="{{ url('delivery-slots/run-sheet', query|merge({ date: next })) }}" aria-label="{{ 'Next day'|t('delivery-slots') }}" data-icon="rightangle"></a>
+		</div>
+		<h2 style="margin: 0 12px;">{{ date|date('l j F Y') }}</h2>
+		{% if methods|length > 1 %}
+			<form method="get" class="flex">
+				{{ hiddenInput('date', date|date('Y-m-d')) }}
+				<div class="select">
+					<select name="method" onchange="this.form.submit()" aria-label="{{ 'Shipping method'|t('delivery-slots') }}">
+						<option value="">{{ 'All shipping methods'|t('delivery-slots') }}</option>
+						{% for id, method in methods %}
+							<option value="{{ id }}" {{ id == methodId ? 'selected' }}>{{ method.name }}</option>
+						{% endfor %}
+					</select>
+				</div>
+			</form>
+		{% endif %}
+	</div>
+{% endblock %}
+
+{% block content %}
+	{% if not methods|length %}
+		<p>{{ 'No shipping methods offer delivery times yet.'|t('delivery-slots') }} <a href="{{ url('delivery-slots/schedules') }}">{{ 'Set up a schedule'|t('delivery-slots') }}</a></p>
+	{% else %}
+		{% if summary|length %}
+			<div class="ds-summary">
+				{% for s in summary %}
+					{% set pct = s.capacity ? min(100, (s.count / s.capacity * 100)|round) : 0 %}
+					<div class="ds-summary__item">
+						<div class="flex flex-nowrap" style="justify-content: space-between;"><strong>{{ s.label }}</strong><span class="light">{{ s.count }} / {{ s.capacity }}</span></div>
+						<div class="ds-bar"><div class="ds-bar__fill{{ s.count >= s.capacity ? ' ds-bar__fill--full' }}" style="width: {{ pct }}%"></div></div>
+					</div>
+				{% endfor %}
+			</div>
+		{% endif %}
+
+		{% include 'delivery-slots/run-sheet/_table' %}
+	{% endif %}
+
+	{% css %}
+	.ds-summary { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin-bottom: 20px; }
+	.ds-summary__item { border: 1px solid var(--hairline-color, #e3e5e8); border-radius: 6px; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; font-size: 13px; }
+	.ds-bar { height: 6px; border-radius: 3px; background: #e4e9f0; overflow: hidden; }
+	.ds-bar__fill { height: 6px; background: #3f4d5a; }
+	.ds-bar__fill--full { background: #c2410c; }
+	.ds-sheet .ds-group-head th { background: #f3f7fc; font-weight: 600; }
+	{% endcss %}
+{% endblock %}
