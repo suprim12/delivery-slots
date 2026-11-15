@@ -55,6 +55,7 @@ export default defineConfig({
         items: [
           { text: 'Grocery Delivery Checkout', link: '/examples/grocery-delivery' },
           { text: 'Click and Collect', link: '/examples/click-and-collect' },
+          { text: 'Pay on Collection', link: '/examples/pay-on-collection' },
           { text: 'Zone Days and Fees', link: '/examples/zone-fees' },
           { text: 'Order Confirmation Email', link: '/examples/order-email' },
           { text: 'Slot Picker in JavaScript', link: '/examples/javascript-picker' },

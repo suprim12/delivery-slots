@@ -45,6 +45,10 @@ Tell customers where and when to collect, on the order confirmation page and in 
 {% endif %}
 ```
 
+## Paying at the counter
+
+To let customers pay when they collect instead of online, see [Pay on Collection](/examples/pay-on-collection).
+
 ## Several stores
 
 For pickup from more than one store, create a shipping method per store, such as *Pick up in Norwood* and *Pick up in Glenelg*, each with its own schedule and opening hours. Customers choose the store by choosing the method.
