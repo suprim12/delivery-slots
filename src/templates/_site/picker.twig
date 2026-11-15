@@ -27,6 +27,30 @@
 			<p class="ds-note">{{ 'There are no delivery times for this address. Choose another way to get your order, or another address.'|t('delivery-slots') }}</p>
 		{% else %}
 			{% if required %}<input type="hidden" name="deliverySlotRequired" value="1">{% endif %}
+			{# When no day has more than one time, choosing the day is choosing the time. #}
+			{% set dayOnly = days|filter(d => d.slots|length > 1)|length == 0 %}
+			{% if dayOnly %}
+				<fieldset class="ds-days">
+					<legend class="ds-hide">{{ 'Day'|t('delivery-slots') }}</legend>
+					{% for day in days %}
+						{% set slot = day.slots|first %}
+						{% if day.isAvailable %}
+							<label class="ds-day">
+								<input type="radio" name="deliverySlot" value="{{ slot.value }}" {{ slot.value == chosen ? 'checked' }}>
+								<small>{{ day.date|date('D') }}</small>
+								<b>{{ day.date|date('j M') }}</b>
+								<small class="{{ slot.isLow ? 'ds-low' }}">{{ slot.isLow ? '{n} left'|t('delivery-slots', {n: slot.left}) : slot.label }}{{ slot.fee ? ' +' ~ slot.fee|currency(cart.currency) }}</small>
+							</label>
+						{% else %}
+							<span class="ds-day ds-off">
+								<small>{{ day.date|date('D') }}</small>
+								<b>{{ day.date|date('j M') }}</b>
+								<small>{{ day.unavailableReason ?? 'Full'|t('delivery-slots') }}</small>
+							</span>
+						{% endif %}
+					{% endfor %}
+				</fieldset>
+			{% else %}
 			<div class="ds-days">
 				{% for day in days %}
 					<button type="button" class="ds-day" data-day="{{ loop.index }}" aria-pressed="{{ day == openDay ? 'true' : 'false' }}" {{ not day.isAvailable ? 'disabled' }}>
@@ -54,11 +78,12 @@
 					{% endfor %}
 				</fieldset>
 			{% endfor %}
+			{% endif %}
 		{% endif %}
 	{% endif %}
 	{% endif %}
 </div>
-{% if openDay ?? false %}
+{% if (openDay ?? false) and not dayOnly %}
 <script>
 (() => {
 	const root = document.getElementById({{ id|json_encode|raw }});
@@ -67,7 +92,14 @@
 	const open = [...days].filter((b) => !b.disabled);
 	open.forEach((button, i) => button.addEventListener('click', () => {
 		days.forEach((b) => b.setAttribute('aria-pressed', b === button ? 'true' : 'false'));
-		root.querySelectorAll('[data-slots]').forEach((group, j) => { group.hidden = j !== i; });
+		root.querySelectorAll('[data-slots]').forEach((group, j) => {
+			group.hidden = j !== i;
+			// A day with only one time left: choosing the day chooses it.
+			const left = group.querySelectorAll('input:not(:disabled)');
+			if (j === i && left.length === 1) {
+				left[0].checked = true;
+			}
+		});
 	}));
 })();
 </script>
@@ -85,14 +117,20 @@
 	.ds-day small { font-size: 11px; color: var(--ds-muted); min-height: 1.2em; }
 	.ds-day[aria-pressed="true"] { background: var(--ds-accent); border-color: var(--ds-accent); color: #fff; }
 	.ds-day[aria-pressed="true"] small { color: inherit; }
-	.ds-day:disabled { opacity: .5; cursor: not-allowed; }
+	.ds-day:disabled, .ds-off { opacity: .5; cursor: not-allowed; }
+	fieldset.ds-days { margin: 0 0 12px; padding: 0; border: 0; min-width: 0; }
+	label.ds-day, .ds-off { position: relative; display: block; text-align: center; }
+	label.ds-day input { position: absolute; opacity: 0; }
+	label.ds-day:has(input:checked) { background: var(--ds-accent); border-color: var(--ds-accent); color: #fff; }
+	label.ds-day:has(input:checked) small { color: inherit; }
+	label.ds-day:has(input:focus-visible) { outline: 2px solid var(--ds-accent); outline-offset: 2px; }
 	.ds-slots { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; margin: 0; padding: 0; border: 0; }
 	.ds-slots[hidden] { display: none; }
 	.ds-slot { display: block; position: relative; padding: 10px 12px; border: 1px solid var(--ds-line); border-radius: 8px; cursor: pointer; }
 	.ds-slot input { position: absolute; opacity: 0; }
 	.ds-slot b, .ds-slot small { display: block; }
 	.ds-slot small { font-size: 12px; color: var(--ds-muted); }
-	.ds-slot small.ds-low { color: #a4470b; }
+	.ds-slot small.ds-low, .ds-day small.ds-low { color: #a4470b; }
 	.ds-slot:has(input:checked) { border: 2px solid var(--ds-accent); padding: 9px 11px; }
 	.ds-slot:has(input:focus-visible) { outline: 2px solid var(--ds-accent); outline-offset: 2px; }
 	.ds-full { opacity: .55; cursor: not-allowed; }

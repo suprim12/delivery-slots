@@ -1,11 +1,11 @@
 # Cake Shop
 
-A bakery that bakes cakes to order for collection: two days’ notice, three cakes per two-hour window, closed Sundays and Mondays, with a message piped on top.
+A bakery that bakes cakes to order for collection: customers choose the day, not a time. Two days’ notice, twelve cakes a day, closed Sundays and Mondays, with a message piped on top.
 
-![Collecting a dark chocolate cake: Thursday 19 November chosen from two weeks of days, with Sundays and Mondays closed, Wednesday 25 a private event and Tuesday 17 nearly full](/examples/cake-shop.jpg)
+![Collecting a dark chocolate cake: Saturday 21 November chosen from two weeks of days, each open day showing 10am – 4pm, with Sundays and Mondays closed and Wednesday 25 a private event](/examples/cake-shop.jpg)
 
 - Days within two days show no times, so nobody orders a cake that can’t be baked in time.
-- Each window takes three cakes. A busy Saturday can take more with a one-off limit.
+- One window a day, so the picker shows days only: choosing the day chooses the time. The limit is how many cakes you can bake that day.
 - The message on the cake is saved on the order’s line item, so it shows on the order and the packing list.
 
 ## 1. The shipping method
@@ -20,13 +20,13 @@ In **Delivery Slots → Schedules**, open **Collect from the bakery**:
 
 | Setting | Value |
 |---|---|
-| **Time windows** | 10:00–12:00, 12:00–14:00, 14:00–16:00, Tuesday to Saturday |
-| **Orders per slot** | 3, or how many cakes you can finish in a window |
+| **Time windows** | One window, 10:00–16:00, Tuesday to Saturday |
+| **Orders per slot** | 12, or how many cakes you can bake in a day |
 | **Same-day slots** | Off |
 | **Book at least** | 48 hours |
 | **Show slots up to** | 14 days ahead |
 | **Closed days** | Public holidays, and days you’re catering, such as *Private event* |
-| **One-off changes** | 6 per window on a Saturday with an extra baker |
+| **One-off changes** | 18 on a Saturday with an extra baker |
 
 Leave **Zones** empty: anyone can collect.
 
@@ -73,15 +73,19 @@ Each cake is a small form that adds it to the cart with its message, as the line
     </label>
   {% endfor %}
 
-  <h2>When will you collect it?</h2>
-  <p>Baked to order: two days’ notice.</p>
+  <h2>Which day will you collect it?</h2>
+  <p>Any time 10am to 4pm. Baked to order: two days’ notice.</p>
   {{ craft.deliverySlots.picker(cart, {heading: false}) }}
 
   <button>Continue to payment</button>
 </form>
 ```
 
-The picker shows two weeks of days. Those inside the two days’ notice say *Ordering has closed*, closed days show their label, and nearly full ones say *Few left*.
+The picker shows two weeks of days, each with its hours. Days inside the two days’ notice say *Ordering has closed*, closed days show their label, and nearly full days say *2 left*.
+
+## Timed collection instead
+
+For cakes that must leave the fridge just before collection, or a counter that gets crowded, use two-hour windows with a few cakes each, such as 10:00–12:00, 12:00–14:00 and 14:00–16:00 with 4 each. The picker then shows the times for the chosen day.
 
 ## The confirmation
 

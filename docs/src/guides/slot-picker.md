@@ -13,6 +13,7 @@ Put it inside the form where customers choose a shipping method, which posts to 
 It shows:
 
 - the days, as buttons, and the chosen day’s times as radio buttons, with *Full*, *2 left* and slot fees;
+- just the days, when no day has more than one time, such as a bakery open 10am to 4pm: choosing the day chooses its time;
 - the error when a slot can’t be held, such as when it has just filled up;
 - *Choose a delivery time* when the form is sent without one, so customers can’t go on to payment without a time;
 - a notice when a new address means the chosen time isn’t offered there any more;
