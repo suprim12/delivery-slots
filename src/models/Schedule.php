@@ -13,7 +13,6 @@ use Craft;
 use craft\base\Model;
 use craft\helpers\DateTimeHelper;
 use craft\helpers\Json;
-use craft\helpers\StringHelper;
 use DateTime;
 use suprim\deliveryslots\records\ScheduleRecord;
 
@@ -63,12 +62,11 @@ class Schedule extends Model
     public array $zones = [];
 
     /**
-     * Postcode zones, checked before drawn zones. They need no map. A postcode can be exact (`5067`), a range
-     * (`5000-5099`) or a prefix (`SW1*`).
+     * Commerce shipping zones, checked before drawn zones: countries, states and postcodes, set up in Commerce.
      *
-     * @var array<int, array{key: string, name: string, postcodes: string[], days: int[], capacity: int|null, fee: float}>
+     * @var array<int, array{shippingZoneId: int, days: int[], capacity: int|null, fee: float}>
      */
-    public array $postcodeZones = [];
+    public array $shippingZones = [];
 
     public static function fromRecord(ScheduleRecord $record): self
     {
@@ -98,7 +96,7 @@ class Schedule extends Model
             'closedDates' => array_values($this->closedDates),
             'overrides' => array_values($this->overrides),
             'zones' => array_values($this->zones),
-            'postcodeZones' => array_values($this->postcodeZones),
+            'shippingZones' => array_values($this->shippingZones),
         ];
     }
 
@@ -175,71 +173,21 @@ class Schedule extends Model
         }
         $this->zones = $zones;
 
-        $postcodeZones = [];
-        foreach ((array)($settings['postcodeZones'] ?? []) as $i => $row) {
-            $postcodes = self::postcodes($row['postcodes'] ?? []);
-            if (!$postcodes) {
+        $shippingZones = [];
+        foreach ((array)($settings['shippingZones'] ?? []) as $row) {
+            $id = (int)(is_array($row['shippingZoneId'] ?? null) ? reset($row['shippingZoneId']) : ($row['shippingZoneId'] ?? 0));
+            if (!$id) {
                 continue;
             }
-            $name = trim((string)($row['name'] ?? ''));
-            if ($name === '') {
-                $name = Craft::t('delivery-slots', 'Postcodes {list}', ['list' => implode(', ', array_slice($postcodes, 0, 3))]);
-            }
             $capacity = $row['capacity'] ?? null;
-            $key = 'postcode:' . (StringHelper::slugify($name) ?: (string)$i);
-            $postcodeZones[] = [
-                'key' => $key,
-                'name' => $name,
-                'postcodes' => $postcodes,
+            $shippingZones[] = [
+                'shippingZoneId' => $id,
                 'days' => self::days($row),
                 'capacity' => $capacity === null || $capacity === '' ? null : max(0, (int)$capacity),
                 'fee' => max(0, (float)($row['fee'] ?? 0)),
             ];
         }
-        $this->postcodeZones = $postcodeZones;
-    }
-
-    /**
-     * Postcodes from text or a list, tidied: upper case, no spaces, each once. `5000 - 5099` becomes `5000-5099`.
-     *
-     * @param string|string[] $value
-     * @return string[]
-     */
-    public static function postcodes(string|array $value): array
-    {
-        $text = is_array($value) ? implode(',', $value) : $value;
-        $text = (string)preg_replace('/\s*-\s*/', '-', strtoupper($text));
-        $list = preg_split('/[\s,;]+/', $text, -1, PREG_SPLIT_NO_EMPTY) ?: [];
-
-        return array_values(array_unique($list));
-    }
-
-    /**
-     * Whether a postcode is in a list of exact postcodes, numeric ranges and prefixes ending in `*`.
-     *
-     * @param string[] $patterns
-     */
-    public static function postcodeMatches(string $postcode, array $patterns): bool
-    {
-        $postcode = strtoupper((string)preg_replace('/\s+/', '', $postcode));
-        if ($postcode === '') {
-            return false;
-        }
-        foreach ($patterns as $pattern) {
-            if (str_ends_with($pattern, '*')) {
-                if (str_starts_with($postcode, rtrim($pattern, '*'))) {
-                    return true;
-                }
-            } elseif (preg_match('/^(\d+)-(\d+)$/', $pattern, $m)) {
-                if (ctype_digit($postcode) && strlen($postcode) === strlen($m[1]) && (int)$postcode >= (int)$m[1] && (int)$postcode <= (int)$m[2]) {
-                    return true;
-                }
-            } elseif ($postcode === $pattern) {
-                return true;
-            }
-        }
-
-        return false;
+        $this->shippingZones = $shippingZones;
     }
 
     /**

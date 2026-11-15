@@ -126,6 +126,18 @@ class Slots extends Component
     }
 
     /**
+     * Whether the method delivers to zones and the order has no address yet to check against them.
+     */
+    public function needsAddress(Order $order, ShippingMethod|string|null $method = null): bool
+    {
+        $method = $this->method($order, $method);
+        $schedule = $method ? Plugin::getInstance()->schedules->getEnabled($method->id) : null;
+        $zones = Plugin::getInstance()->zones;
+
+        return $schedule !== null && $zones->applies($schedule) && !$zones->hasAddress($order);
+    }
+
+    /**
      * Whether the order's shipping method offers slots.
      */
     public function hasSlots(Order $order, ShippingMethod|string|null $method = null): bool
@@ -141,7 +153,7 @@ class Slots extends Component
      * @param string $value A slot's value, such as `2026-11-17@08:00`, or an empty string to clear it.
      * @return string|null An error message, or null when the slot is held.
      */
-    public function choose(Order $order, string $value): ?string
+    public function choose(Order $order, string $value, ?int $holdMinutes = null): ?string
     {
         if (trim($value) === '') {
             $this->release($order);
@@ -183,7 +195,7 @@ class Slots extends Component
             $record->zoneName = $zone['name'] ?? null;
             $record->fee = $slot->fee;
             $record->status = BookingRecord::STATUS_HELD;
-            $record->expiresAt = Db::prepareDateForDb($this->holdUntil());
+            $record->expiresAt = Db::prepareDateForDb($this->holdUntil($holdMinutes));
             $record->save(false);
             $this->_bookings[$order->id] = DeliverySlot::fromRecord($record);
         } finally {
@@ -198,7 +210,7 @@ class Slots extends Component
      *
      * @return string|null An error message, or null when the order can be paid for.
      */
-    public function checkBeforePayment(Order $order): ?string
+    public function checkBeforePayment(Order $order, bool $paying = false): ?string
     {
         if (!$this->hasSlots($order)) {
             return null;
@@ -211,7 +223,10 @@ class Slots extends Component
             return null;
         }
 
-        return $this->choose($order, $booking->getValue());
+        // Held again, for as long as paying may take, if it's still free.
+        $minutes = $paying ? max(Plugin::getInstance()->getSettings()->holdMinutes, Plugin::getInstance()->getSettings()->paymentHoldMinutes) : null;
+
+        return $this->choose($order, $booking->getValue(), $minutes);
     }
 
     /**
@@ -228,6 +243,12 @@ class Slots extends Component
             $record->delete();
             unset($this->_bookings[$order->id]);
             return;
+        }
+        // A paid order is booked even if its hold ran out and the slot filled meanwhile; staff are told, so they can
+        // move it, rather than the customer losing their order.
+        $slot = $this->find($order, (string)$record->date, (string)$record->start);
+        if ($slot !== null && $slot->getIsFull()) {
+            Craft::warning("Order $order->id was booked into {$record->date} {$record->start}, which was already full.", 'delivery-slots');
         }
         $record->status = BookingRecord::STATUS_BOOKED;
         $record->expiresAt = null;
@@ -358,9 +379,9 @@ class Slots extends Component
     /**
      * When a hold ends. With `holdMinutes` set to 0, holds end straight away, so only paid orders take places.
      */
-    private function holdUntil(): DateTime
+    private function holdUntil(?int $minutes = null): DateTime
     {
-        $minutes = max(0, Plugin::getInstance()->getSettings()->holdMinutes);
+        $minutes = max(0, $minutes ?? Plugin::getInstance()->getSettings()->holdMinutes);
 
         return new DateTime('@' . ($this->now()->getTimestamp() + $minutes * 60));
     }

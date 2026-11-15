@@ -19,27 +19,13 @@ php craft plugin/install delivery-slots
 
 1. **Check your shipping method.** In **Commerce → Store Management → Shipping Methods**, make sure you have the method customers will choose a time for, such as *Local delivery*, with a shipping rule that matches their orders.
 2. **Set up its schedule.** Go to **Delivery Slots → Schedules**, choose the method, turn on **Offer delivery times** and save. A new schedule starts with two-hour windows from 8am to 6pm, Monday to Saturday. See [Setting Up a Schedule](/getting-started/schedules).
-3. **Add the picker to your checkout.** On the page where customers choose a shipping method, add the slots to the same cart form:
+3. **Add the picker to your checkout.** On the page where customers choose a shipping method, add one line inside the cart form:
 
 ```twig
-{% if cart.hasDeliverySlots %}
-  {% for day in cart.deliverySlotDays %}
-    <h3>{{ day.date|date('l j F') }}</h3>
-    {% if day.unavailableReason %}
-      <p>{{ day.unavailableReason }}</p>
-    {% else %}
-      {% for slot in day.slots %}
-        <label>
-          <input type="radio" name="deliverySlot" value="{{ slot.value }}"
-            {{ slot.value == (cart.deliverySlot.value ?? null) ? 'checked' }}
-            {{ slot.isFull ? 'disabled' }}>
-          {{ slot.label }}
-        </label>
-      {% endfor %}
-    {% endif %}
-  {% endfor %}
-{% endif %}
+{{ craft.deliverySlots.picker() }}
 ```
+
+   It shows the days and times for the cart’s shipping method, and nothing for methods without slots. To build your own, see [The Slot Picker](/guides/slot-picker).
 
 4. **Place a test order.** Choose a slot, pay, and open **Delivery Slots → Run sheet** for that day.
 

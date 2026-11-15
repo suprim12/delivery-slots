@@ -30,7 +30,7 @@
 								{% endif %}
 							</td>
 							<td>{{ schedule ? schedule.windows|length : '—' }}</td>
-							<td>{{ schedule and (schedule.zones|length + schedule.postcodeZones|length) ? schedule.zones|length + schedule.postcodeZones|length : '—' }}</td>
+							<td>{{ schedule and (schedule.zones|length + schedule.shippingZones|length) ? schedule.zones|length + schedule.shippingZones|length : '—' }}</td>
 						</tr>
 					{% endfor %}
 				</tbody>

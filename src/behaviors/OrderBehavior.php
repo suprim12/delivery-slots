@@ -47,4 +47,13 @@ class OrderBehavior extends Behavior
     {
         return Plugin::getInstance()->slots->hasSlots($this->owner, $shippingMethodHandle);
     }
+
+    /**
+     * Whether the shipping method delivers to zones and the customer hasn’t entered an address yet, so its times can’t
+     * be shown. Show a message such as “Enter your address to see delivery times”.
+     */
+    public function getDeliverySlotsNeedAddress(?string $shippingMethodHandle = null): bool
+    {
+        return Plugin::getInstance()->slots->needsAddress($this->owner, $shippingMethodHandle);
+    }
 }

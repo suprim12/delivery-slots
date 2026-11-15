@@ -11,6 +11,9 @@ return [
     // How long a chosen slot is held for a customer who hasn’t paid yet, in minutes.
     'holdMinutes' => 15,
 
+    // How long the slot is held once the customer goes to pay, for payment pages that take a while.
+    'paymentHoldMinutes' => 60,
+
     // Slots with this many places or fewer count as nearly full (slot.isLow).
     'fewLeft' => 2,
 
@@ -30,6 +33,7 @@ return [
 | Option | Default | Description |
 |---|---|---|
 | `holdMinutes` | `15` | How long a slot is [held](/guides/holds) while the customer checks out. Raise it for slow payment gateways, or set it to `0` so only paid orders take places |
+| `paymentHoldMinutes` | `60` | How long the slot is held once the customer goes to pay, so a slow payment page, such as 3-D Secure or an off-site gateway, doesn’t lose it |
 | `fewLeft` | `2` | When `slot.isLow` is true, for “2 left” notes |
 | `noteField` | `null` | The handle of an order field shown as a **Note** column on the [run sheet](/guides/run-sheet) and in the CSV |
 | `deliveredStatus` | `delivered` | The handle of the order status that **Mark delivered** sets ([run sheet](/guides/run-sheet#marking-orders-delivered)) |

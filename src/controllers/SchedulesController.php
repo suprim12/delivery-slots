@@ -85,12 +85,15 @@ class SchedulesController extends Controller
                 'capacity' => $z['capacity'],
                 'fee' => $z['fee'] ?: '',
             ] + $this->dayCells($z['days']), $schedule->zones),
-            'postcodeZoneRows' => array_map(fn($z) => [
-                'name' => $z['name'],
-                'postcodes' => implode(', ', $z['postcodes']),
+            'shippingZoneRows' => array_map(fn($z) => [
+                'shippingZoneId' => $z['shippingZoneId'],
                 'capacity' => $z['capacity'],
                 'fee' => $z['fee'] ?: '',
-            ] + $this->dayCells($z['days']), $schedule->postcodeZones),
+            ] + $this->dayCells($z['days']), $schedule->shippingZones),
+            'shippingZoneOptions' => array_values(array_map(
+                fn($zone) => ['label' => $zone->name, 'value' => $zone->id],
+                \craft\commerce\Plugin::getInstance()->getShippingZones()->getAllShippingZones($method->storeId)->all(),
+            )),
             'zonesAvailable' => $zones->isAvailable(),
             'zoneOptions' => $zones->options(),
             'cutoff' => $schedule->cutoff ? $this->time($schedule->cutoff) : null,
@@ -118,7 +121,7 @@ class SchedulesController extends Controller
             'overrides' => $request->getBodyParam('overrides') ?: [],
             // Keep saved zones if Geo Maps has been removed, so they come back when it's reinstalled.
             'zones' => Plugin::getInstance()->zones->isAvailable() ? ($request->getBodyParam('zones') ?: []) : $schedule->zones,
-            'postcodeZones' => $request->getBodyParam('postcodeZones') ?: [],
+            'shippingZones' => $request->getBodyParam('shippingZones') ?: [],
         ]);
 
         if (!Plugin::getInstance()->schedules->save($schedule)) {

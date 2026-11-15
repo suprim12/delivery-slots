@@ -19,6 +19,9 @@ class Settings extends Model
     /** How long a chosen slot is held for a customer who hasn't paid yet, in minutes. */
     public int $holdMinutes = 15;
 
+    /** How long a slot is held once the customer starts paying, so time on a payment page doesn’t lose it. */
+    public int $paymentHoldMinutes = 60;
+
     /** Slots with this many places or fewer count as nearly full (`slot.isLow`). */
     public int $fewLeft = 2;
 

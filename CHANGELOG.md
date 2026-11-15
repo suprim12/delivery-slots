@@ -4,11 +4,11 @@
 
 ### Added
 - Delivery and pickup time slots for Craft Commerce shipping methods, with time windows per weekday and a limit on orders per slot.
-- A slot picker for checkouts: `cart.deliverySlotDays`, posted with the cart form as `deliverySlot`.
-- Slots are held for 15 minutes while customers pay, and checked again before payment.
+- A ready-made slot picker for checkouts, `craft.deliverySlots.picker()`, or your own markup with `cart.deliverySlotDays`, posted with the cart form as `deliverySlot`.
+- Slots are held for 15 minutes while customers check out, and for an hour once they go to pay. A slot is needed to pay or to complete an order without payment.
 - Next-day cut-off, same-day slots, a minimum notice and how many days ahead to show.
 - Closed days with a label, and changes to one window on one date.
-- Delivery zones by postcode, or drawn with Geo Maps, each with its own days, limit and slot fee. Addresses outside every zone aren’t offered the shipping method.
+- Delivery zones from Commerce’s shipping zones, or drawn with Geo Maps, each with its own days, limit and slot fee. Addresses outside every zone aren’t offered the shipping method.
 - A run sheet of each day’s orders by slot, zone and suburb, with print and CSV export.
 - A packing list of each item’s quantity by slot.
 - CSV exports of orders or the packing list for any date range, also as `php craft delivery-slots/export`.

@@ -1,0 +1,88 @@
+{# The ready-made slot picker: {{ craft.deliverySlots.picker() }} inside the checkout form. #}
+{% if cart.hasDeliverySlots %}
+{% set id = 'ds-' ~ random() %}
+<div class="ds-picker" id="{{ id }}">
+	{% if heading %}<h2 class="ds-heading">{{ heading }}</h2>{% endif %}
+	{% if cart.getFirstError('deliverySlot') %}<p class="ds-error" role="alert">{{ cart.getFirstError('deliverySlot') }}</p>{% endif %}
+
+	{% if cart.deliverySlotsNeedAddress %}
+		<p class="ds-note">{{ 'Enter your address to see delivery times.'|t('delivery-slots') }}</p>
+	{% else %}
+		{% set days = cart.deliverySlotDays %}
+		{% set chosen = cart.deliverySlot.value ?? null %}
+		{% set openDay = days|filter(d => chosen and d.date|date('Y-m-d') == chosen|split('@')|first)|first
+			?: days|filter(d => d.isAvailable)|first %}
+		{% if not openDay %}
+			<p class="ds-note">{{ 'There are no delivery times for this address. Choose another way to get your order, or another address.'|t('delivery-slots') }}</p>
+		{% else %}
+			<div class="ds-days">
+				{% for day in days %}
+					<button type="button" class="ds-day" data-day="{{ loop.index }}" aria-pressed="{{ day == openDay ? 'true' : 'false' }}" {{ not day.isAvailable ? 'disabled' }}>
+						<small>{{ day.date|date('D') }}</small>
+						<b>{{ day.date|date('j M') }}</b>
+						<small>{{ day.unavailableReason ?? (day.slots|filter(s => s.isLow)|length ? 'Few left'|t('delivery-slots')) }}</small>
+					</button>
+				{% endfor %}
+			</div>
+			{% for day in days|filter(d => d.isAvailable) %}
+				<fieldset class="ds-slots" data-slots="{{ loop.index }}" {{ day != openDay ? 'hidden' }}>
+					<legend class="ds-hide">{{ day.date|date('l j F') }}</legend>
+					{% for slot in day.slots %}
+						<label class="ds-slot{{ slot.isFull ? ' ds-full' }}">
+							<input type="radio" name="deliverySlot" value="{{ slot.value }}" {{ slot.value == chosen ? 'checked' }} {{ slot.isFull ? 'disabled' }}>
+							<b>{{ slot.label }}</b>
+							{% if slot.isFull %}
+								<small>{{ 'Full'|t('delivery-slots') }}</small>
+							{% elseif slot.isLow %}
+								<small class="ds-low">{{ '{n} left'|t('delivery-slots', {n: slot.left}) }}</small>
+							{% elseif slot.fee %}
+								<small>+{{ slot.fee|currency(cart.currency) }}</small>
+							{% endif %}
+						</label>
+					{% endfor %}
+				</fieldset>
+			{% endfor %}
+		{% endif %}
+	{% endif %}
+</div>
+{% if openDay ?? false %}
+<script>
+(() => {
+	const root = document.getElementById({{ id|json_encode|raw }});
+	const days = root.querySelectorAll('.ds-day');
+	// Disabled days are left out of the slot groups, so match on the day's position among the open ones.
+	const open = [...days].filter((b) => !b.disabled);
+	open.forEach((button, i) => button.addEventListener('click', () => {
+		days.forEach((b) => b.setAttribute('aria-pressed', b === button ? 'true' : 'false'));
+		root.querySelectorAll('[data-slots]').forEach((group, j) => { group.hidden = j !== i; });
+	}));
+})();
+</script>
+{% endif %}
+{% if styles %}
+<style>
+	.ds-picker { --ds-accent: #1f5f3f; --ds-line: #d8d6cf; --ds-muted: #5d5f63; }
+	.ds-heading { margin: 0 0 12px; font-size: 1.1em; }
+	.ds-note { margin: 0; color: var(--ds-muted); }
+	.ds-error { margin: 0 0 12px; padding: 10px 12px; border-radius: 8px; background: #fdf1ee; color: #8a2a17; }
+	.ds-days { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 8px; margin-bottom: 12px; }
+	.ds-day { padding: 8px 4px; border: 1px solid var(--ds-line); border-radius: 8px; background: #fff; color: inherit; font: inherit; cursor: pointer; }
+	.ds-day small, .ds-day b { display: block; }
+	.ds-day small { font-size: 11px; color: var(--ds-muted); min-height: 1.2em; }
+	.ds-day[aria-pressed="true"] { background: var(--ds-accent); border-color: var(--ds-accent); color: #fff; }
+	.ds-day[aria-pressed="true"] small { color: inherit; }
+	.ds-day:disabled { opacity: .5; cursor: not-allowed; }
+	.ds-slots { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; margin: 0; padding: 0; border: 0; }
+	.ds-slots[hidden] { display: none; }
+	.ds-slot { display: block; position: relative; padding: 10px 12px; border: 1px solid var(--ds-line); border-radius: 8px; cursor: pointer; }
+	.ds-slot input { position: absolute; opacity: 0; }
+	.ds-slot b, .ds-slot small { display: block; }
+	.ds-slot small { font-size: 12px; color: var(--ds-muted); }
+	.ds-slot small.ds-low { color: #a4470b; }
+	.ds-slot:has(input:checked) { border: 2px solid var(--ds-accent); padding: 9px 11px; }
+	.ds-slot:has(input:focus-visible) { outline: 2px solid var(--ds-accent); outline-offset: 2px; }
+	.ds-full { opacity: .55; cursor: not-allowed; }
+	.ds-hide { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+</style>
+{% endif %}
+{% endif %}

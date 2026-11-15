@@ -4,7 +4,7 @@ When a customer chooses a slot, it’s **held** for their cart. When they pay, i
 
 ## Holds
 
-A held slot counts towards the slot’s limit, so two customers checking out at once can’t both take the last place. The hold lasts 15 minutes, or `holdMinutes` in the [config file](/getting-started/configuration).
+A held slot counts towards the slot’s limit, so two customers checking out at once can’t both take the last place. The hold lasts 15 minutes, or `holdMinutes` in the [config file](/getting-started/configuration). Once the customer goes to pay, it’s held for an hour (`paymentHoldMinutes`), so a slow payment page doesn’t lose it.
 
 If the customer takes longer, the hold runs out, and someone else can take the place. When they come back and pay:
 

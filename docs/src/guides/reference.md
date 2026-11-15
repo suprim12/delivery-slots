@@ -49,7 +49,7 @@ Delivery Slots adds these to every Commerce order and cart:
 | `date`, `start`, `end` | `2026-11-17`, `08:00`, `10:00` |
 | `value` | `2026-11-17@08:00` |
 | `zone` | The drawn zone’s entry, or `null` |
-| `zoneName` | The zone’s name, for a postcode or drawn zone, or `null` |
+| `zoneName` | The zone’s name, a shipping or drawn zone, or `null` |
 | `fee` | The slot’s fee |
 | `isBooked` | `true` once the order is complete, `false` while it’s held |
 | `calendarUrl` | A link to download the slot as a calendar event (`.ics`). Works for completed orders |

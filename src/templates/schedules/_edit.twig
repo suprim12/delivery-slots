@@ -125,24 +125,32 @@
 
 	<hr>
 
+	{% if not shippingZoneRows|length and not zoneRows|length %}
+		<div class="readable" style="margin-bottom: 24px;">
+			<p class="warning with-icon">{{ 'This method has no zones, so any address it’s offered to can book its times, wherever it is. Add zones below, or limit the method to your area in its Commerce shipping rules.'|t('delivery-slots') }}</p>
+		</div>
+	{% endif %}
+
 	{{ forms.editableTableField({
-		label: 'Postcode zones'|t('delivery-slots'),
-		instructions: 'Deliver only to these postcodes: exact (5067), ranges (5000-5099) or prefixes (SW1*), separated by commas. Postcode zones are checked first, and only for addresses in your store’s country. Leave days unticked to use the schedule’s days, and orders per slot blank for no zone limit.'|t('delivery-slots'),
-		id: 'postcodeZones',
-		name: 'postcodeZones',
+		label: 'Shipping zones'|t('delivery-slots'),
+		instructions: 'Commerce shipping zones, by country, state or postcode. Only addresses in one of them get times, and the method isn’t offered to others. Checked before drawn zones; the first match is used. Leave days unticked to use the schedule’s days, and orders per slot blank for no zone limit.'|t('delivery-slots'),
+		id: 'shippingZones',
+		name: 'shippingZones',
 		cols: {
-			name: { type: 'singleline', heading: 'Name'|t('delivery-slots') },
-			postcodes: { type: 'singleline', heading: 'Postcodes'|t('delivery-slots') },
+			shippingZoneId: { type: 'select', heading: 'Zone'|t('delivery-slots'), options: [{ label: '', value: '' }]|merge(shippingZoneOptions) },
 		}|merge(dayColumns)|merge({
 			capacity: { type: 'number', heading: 'Orders per slot'|t('delivery-slots'), thin: true },
 			fee: { type: 'number', heading: 'Slot fee'|t('delivery-slots'), thin: true },
 		}),
-		rows: postcodeZoneRows,
+		rows: shippingZoneRows,
 		allowAdd: true,
 		allowDelete: true,
 		allowReorder: true,
-		addRowLabel: 'Add a postcode zone'|t('delivery-slots'),
+		addRowLabel: 'Add a shipping zone'|t('delivery-slots'),
 	}) }}
+	{% if not shippingZoneOptions|length %}
+		<p class="light">{{ 'Create zones in Commerce → Store Management → Shipping Zones to use them here.'|t('delivery-slots') }}</p>
+	{% endif %}
 
 	{% if zonesAvailable %}
 		{{ forms.editableTableField({
@@ -168,7 +176,7 @@
 	{% else %}
 		<div class="field">
 			<div class="heading"><label>{{ 'Drawn zones'|t('delivery-slots') }}</label></div>
-			<p class="light">{{ 'Install Geo Maps 1.4 or later to draw delivery areas on a map, as well as using postcodes.'|t('delivery-slots') }}</p>
+			<p class="light">{{ 'Install Geo Maps 1.4 or later to draw delivery areas on a map, for areas that don’t follow postcodes.'|t('delivery-slots') }}</p>
 		</div>
 	{% endif %}
 {% endblock %}

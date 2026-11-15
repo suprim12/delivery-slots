@@ -1,8 +1,45 @@
 # The Slot Picker
 
-The slot picker is your own markup: a list of days, each with radio buttons for its slots. The chosen slot posts with your cart form as `deliverySlot`.
+The chosen slot posts with your cart form as `deliverySlot`. Use the ready-made picker, or write your own markup.
 
-## Where it goes
+## The ready-made picker
+
+Put it inside the form where customers choose a shipping method, which posts to `commerce/cart/update-cart`:
+
+```twig
+{{ craft.deliverySlots.picker() }}
+```
+
+It shows:
+
+- the days, as buttons, and the chosen day’s times as radio buttons, with *Full*, *2 left* and slot fees;
+- the error when a slot can’t be held, such as when it has just filled up;
+- *Enter your address to see delivery times* when the method has [zones](/guides/zones) and the customer hasn’t entered an address yet;
+- *There are no delivery times for this address* when no zone covers it;
+- nothing when the cart’s shipping method has no slots.
+
+Options:
+
+```twig
+{{ craft.deliverySlots.picker(cart, {
+  heading: 'When should we deliver?',  {# or false for none #}
+  styles: false,                       {# leave the styling to you #}
+}) }}
+```
+
+Its classes start with `ds-`, and its colours can be changed with CSS variables:
+
+```css
+.ds-picker { --ds-accent: #1f5f3f; --ds-line: #d8d6cf; --ds-muted: #5d5f63; }
+```
+
+Pass `cart` when your template has one from a failed form, as below, so the error shows.
+
+## Your own markup
+
+A list of days, each with radio buttons for its slots.
+
+### Where it goes
 
 Put it in the form where customers choose a shipping method, which posts to `commerce/cart/update-cart`. When that form saves, Delivery Slots holds the chosen slot for the cart.
 
@@ -22,7 +59,9 @@ Put it in the form where customers choose a shipping method, which posts to `com
     </label>
   {% endfor %}
 
-  {% if cart.hasDeliverySlots %}
+  {% if cart.deliverySlotsNeedAddress %}
+    <p>Enter your address to see delivery times.</p>
+  {% elseif cart.hasDeliverySlots %}
     {% if cart.getFirstError('deliverySlot') %}
       <p class="error">{{ cart.getFirstError('deliverySlot') }}</p>
     {% endif %}
@@ -56,7 +95,7 @@ Put it in the form where customers choose a shipping method, which posts to `com
 
 `{% set cart = cart ?? … %}` matters: when the form fails, such as when the slot has just filled up, Commerce returns the cart with its errors in a `cart` variable.
 
-## Days
+### Days
 
 `cart.deliverySlotDays` lists every day from tomorrow (or today, with same-day slots) to the schedule’s last day, including days with no slots, so you can show a full week. Each day has:
 
@@ -66,7 +105,7 @@ Put it in the form where customers choose a shipping method, which posts to `com
 - `isAvailable`: whether any slot can be chosen.
 - `openSlots`: the slots that aren’t full.
 
-## Slots
+### Slots
 
 | Property | Example | Description |
 |---|---|---|

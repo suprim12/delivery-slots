@@ -13,7 +13,7 @@ use craft\db\Migration;
 use suprim\deliveryslots\records\BookingRecord;
 
 /**
- * Bookings remember their zone by key and name, so postcode zones, which aren’t entries, can be counted and shown.
+ * Bookings remember their zone by key and name, so shipping zones, which aren’t entries, can be counted and shown.
  */
 class m261115_000000_zone_names extends Migration
 {

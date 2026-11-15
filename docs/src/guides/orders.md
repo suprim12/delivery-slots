@@ -59,7 +59,7 @@ This outputs “Local delivery: Tuesday 17 November, 8 – 10am”.
 | `startDate` | | When the slot starts, for your own formatting: `order.deliverySlot.startDate\|date('D j M, g:ia')` |
 | `endDate` | | When it ends |
 | `zone` | | The drawn [zone](/guides/zones)’s entry, or `null` |
-| `zoneName` | Inner east | The zone’s name, for a postcode or drawn zone, or `null` |
+| `zoneName` | Inner east | The zone’s name, a shipping or drawn zone, or `null` |
 | `fee` | 4 | The slot’s fee |
 | `isBooked` | | `true` once the order is complete |
 | `calendarUrl` | | A link that downloads the slot as a calendar event (`.ics`), for completed orders |

@@ -37,6 +37,7 @@ use craft\helpers\Html;
 use craft\services\Dashboard;
 use craft\services\UserPermissions;
 use craft\web\Controller;
+use craft\web\twig\variables\CraftVariable;
 use craft\web\UrlManager;
 use suprim\deliveryslots\adjusters\SlotFee;
 use suprim\deliveryslots\behaviors\OrderBehavior;
@@ -47,6 +48,7 @@ use suprim\deliveryslots\services\RunSheets;
 use suprim\deliveryslots\services\Schedules;
 use suprim\deliveryslots\services\Slots;
 use suprim\deliveryslots\services\Zones;
+use suprim\deliveryslots\variables\DeliverySlotsVariable;
 use suprim\deliveryslots\widgets\SlotsWidget;
 use yii\base\ActionEvent;
 use yii\base\Event;
@@ -76,6 +78,9 @@ class Plugin extends BasePlugin
     /** Whether the current request is paying for an order. */
     private bool $_paying = false;
 
+    /** Whether the request completes an order without paying, such as a free order. */
+    private bool $_completing = false;
+
     public static function config(): array
     {
         return [
@@ -97,6 +102,12 @@ class Plugin extends BasePlugin
             $this->registerOrderEvents();
             $this->registerCheckoutEvents();
             $this->registerControlPanel();
+        });
+
+        Event::on(CraftVariable::class, CraftVariable::EVENT_INIT, function(Event $event) {
+            /** @var CraftVariable $variable */
+            $variable = $event->sender;
+            $variable->set('deliverySlots', DeliverySlotsVariable::class);
         });
     }
 
@@ -198,6 +209,24 @@ class Plugin extends BasePlugin
             if (!$this->_paying || $order->isCompleted) {
                 return;
             }
+            // Held for longer while paying, so a payment page that takes a while doesn't lose the slot.
+            if (($error = $this->slots->checkBeforePayment($order, true)) !== null) {
+                $order->addError('deliverySlot', $error);
+                $event->isValid = false;
+            }
+        });
+
+        // Orders completed without paying, such as free orders, need a slot too.
+        Event::on(CartController::class, Controller::EVENT_BEFORE_ACTION, function(ActionEvent $event) {
+            $this->_completing = $event->action->id === 'complete' && Craft::$app->getRequest()->getIsSiteRequest();
+        });
+        Event::on(Order::class, Element::EVENT_BEFORE_SAVE, function(ModelEvent $event) {
+            /** @var Order $order */
+            $order = $event->sender;
+            if (!$this->_completing || !$order->isCompleted) {
+                return;
+            }
+            $this->_completing = false;
             if (($error = $this->slots->checkBeforePayment($order)) !== null) {
                 $order->addError('deliverySlot', $error);
                 $event->isValid = false;
@@ -230,7 +259,7 @@ class Plugin extends BasePlugin
             $methods = [];
             foreach ($event->getShippingMethods() as $method) {
                 $schedule = $method instanceof ShippingMethod && $method->id ? $this->schedules->getEnabled($method->id) : null;
-                if ($schedule && $this->zones->applies($schedule) && $this->zones->canPlace($order, $schedule) && $this->zones->match($schedule, $order) === null) {
+                if ($schedule && $this->zones->applies($schedule) && $this->zones->hasAddress($order) && $this->zones->match($schedule, $order) === null) {
                     continue;
                 }
                 $methods[] = $method;

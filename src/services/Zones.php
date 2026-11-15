@@ -12,6 +12,7 @@ namespace suprim\deliveryslots\services;
 use Craft;
 use craft\base\Component;
 use craft\commerce\elements\Order;
+use craft\commerce\Plugin as CommercePlugin;
 use craft\db\Query;
 use craft\elements\Entry;
 use suprim\deliveryslots\models\Schedule;
@@ -74,18 +75,20 @@ class Zones extends Component
      * The schedule's first zone that contains the order's shipping address, or null when there's none
      * (or the address can't be placed on the map).
      *
-     * Postcode zones are checked first. `zoneId` is the zone entry's ID for a drawn zone, and null for a postcode zone.
+     * Commerce shipping zones are checked first. `zoneId` is the zone entry's ID for a drawn zone, and null for a shipping zone.
      *
      * @return array{zoneId: int|null, key: string, name: string, days: int[], capacity: int|null, fee: float}|null
      */
     public function match(Schedule $schedule, Order $order): ?array
     {
-        // Postcode zones first: they’re exact, and need no map.
+        // Commerce shipping zones first: they’re exact, and need no map.
         $address = $order->getShippingAddress() ?? $order->getEstimatedShippingAddress();
-        if ($schedule->postcodeZones && $address && $this->inStoreCountry($order, $address->countryCode)) {
-            foreach ($schedule->postcodeZones as $rule) {
-                if (Schedule::postcodeMatches((string)$address->postalCode, $rule['postcodes'])) {
-                    return ['zoneId' => null] + $rule;
+        if ($schedule->shippingZones && $address) {
+            $shippingZones = CommercePlugin::getInstance()->getShippingZones();
+            foreach ($schedule->shippingZones as $rule) {
+                $zone = $shippingZones->getShippingZoneById($rule['shippingZoneId']);
+                if ($zone && $zone->getCondition()->matchElement($address)) {
+                    return ['zoneId' => null, 'key' => 'shippingZone:' . $zone->id, 'name' => (string)$zone->name] + $rule;
                 }
             }
         }
@@ -114,36 +117,23 @@ class Zones extends Component
     }
 
     /**
-     * Whether the schedule’s zones are in use: it has postcode zones, or drawn zones and Geo Maps is installed.
+     * Whether the schedule’s zones are in use: it has Commerce shipping zones, or drawn zones and Geo Maps is installed.
      */
     public function applies(Schedule $schedule): bool
     {
-        return $schedule->postcodeZones || ($schedule->zones && $this->isAvailable());
+        return $schedule->shippingZones || ($schedule->zones && $this->isAvailable());
     }
 
     /**
-     * Whether the order’s address can be checked against the schedule’s zones yet: it has a postcode, or a place
-     * on the map. Before then, methods with zones aren’t hidden.
+     * Whether the customer has entered an address to check against the zones. Before then, methods with zones are
+     * still offered, and the picker asks for the address. After, an address no zone contains, including one that
+     * can’t be found on the map, isn’t offered the method, so nobody is left with delivery and no times.
      */
-    public function canPlace(Order $order, Schedule $schedule): bool
+    public function hasAddress(Order $order): bool
     {
-        $address = $order->getShippingAddress() ?? $order->getEstimatedShippingAddress();
-        if ($schedule->postcodeZones && $address && trim((string)$address->postalCode) !== '') {
-            return true;
-        }
+        $address = $order->getShippingAddress();
 
-        return $schedule->zones && $this->hasLocation($order);
-    }
-
-    /**
-     * Postcodes are only compared within the store’s own country, when the store has a location set.
-     */
-    private function inStoreCountry(Order $order, ?string $countryCode): bool
-    {
-        $store = $order->getStore()->getSettings()->getLocationAddress();
-        $storeCountry = $store?->countryCode;
-
-        return !$storeCountry || !$countryCode || strtoupper($storeCountry) === strtoupper($countryCode);
+        return $address !== null && (trim((string)$address->addressLine1) !== '' || trim((string)$address->postalCode) !== '' || trim((string)$address->locality) !== '');
     }
 
     /**

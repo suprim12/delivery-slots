@@ -35,7 +35,7 @@ class DeliverySlot extends Model
     public string $end = '';
     public ?int $zoneId = null;
 
-    /** The zone’s key: `entry:12` for a drawn zone, `postcode:inner-east` for a postcode zone. */
+    /** The zone’s key: `entry:12` for a drawn zone, `shippingZone:3` for a Commerce shipping zone. */
     public ?string $zoneKey = null;
 
     /** The zone’s name when the slot was chosen. */
@@ -115,7 +115,7 @@ class DeliverySlot extends Model
         return $this->zoneId ? Entry::find()->id($this->zoneId)->status(null)->one() : null;
     }
 
-    /** The zone’s name, for a drawn or a postcode zone, or null when the slot has no zone. */
+    /** The zone’s name, for a drawn or a shipping zone, or null when the slot has no zone. */
     public function getZoneName(): ?string
     {
         if ($this->zoneName !== null && $this->zoneName !== '') {
