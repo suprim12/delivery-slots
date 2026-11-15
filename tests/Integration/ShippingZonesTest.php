@@ -191,4 +191,19 @@ class ShippingZonesTest extends TestCase
         $this->assertSame('shippingZone:' . $hills->id, $booking->zoneKey);
         $this->assertEquals(4.0, $booking->fee);
     }
+
+    public function testSaysWhichMethodsArentAvailableForTheAddress(): void
+    {
+        $this->zonedSchedule();
+        // Only this test's method: the site's own methods may have zones too.
+        $ids = fn($cart) => array_values(array_intersect([$this->method->id], array_map(fn($m) => $m->id, $this->plugin()->slots->getUnavailableMethods($cart))));
+        $outside = $this->cart(true, $this->address('6000'));
+
+        $this->assertSame([$this->method->id], $ids($outside));
+        $this->assertStringContainsString($this->method->name, (string)(new DeliverySlotsVariable())->picker($outside));
+        $this->assertStringContainsString('available for Testville 6000.', (string)(new DeliverySlotsVariable())->picker($outside));
+
+        $this->assertSame([], $ids($this->cart(true, $this->address('5067'))));
+        $this->assertSame([], $this->plugin()->slots->getUnavailableMethods($this->cart()), 'Not before there’s an address.');
+    }
 }

@@ -1,7 +1,17 @@
 {# The ready-made slot picker: {{ craft.deliverySlots.picker() }} inside the checkout form. #}
-{% if cart.hasDeliverySlots %}
+{% set unavailable = cart.deliverySlotsUnavailableMethods %}
+{% if cart.hasDeliverySlots or unavailable %}
 {% set id = 'ds-' ~ random() %}
 <div class="ds-picker" id="{{ id }}">
+	{% if unavailable %}
+		{% set address = cart.shippingAddress %}
+		{% set place = [address.locality ?? null, address.postalCode ?? null]|filter|join(' ') %}
+		<p class="ds-unavailable">{{ (unavailable|length == 1 ? '{methods} isn’t available for {place}.' : '{methods} aren’t available for {place}.')|t('delivery-slots', {
+			methods: unavailable|map(m => m.name)|join(', ', ' and '),
+			place: place ?: 'this address'|t('delivery-slots'),
+		}) }}</p>
+	{% endif %}
+	{% if cart.hasDeliverySlots %}
 	{% if heading %}<h2 class="ds-heading">{{ heading }}</h2>{% endif %}
 	{% set error = cart.getFirstError('deliverySlot') ?: (cart.getFirstNotice('deliverySlotUnavailable').message ?? null) %}
 	{% if error %}<p class="ds-error" role="alert">{{ error }}</p>{% endif %}
@@ -46,6 +56,7 @@
 			{% endfor %}
 		{% endif %}
 	{% endif %}
+	{% endif %}
 </div>
 {% if openDay ?? false %}
 <script>
@@ -66,6 +77,7 @@
 	.ds-picker { --ds-accent: #1f5f3f; --ds-line: #d8d6cf; --ds-muted: #5d5f63; }
 	.ds-heading { margin: 0 0 12px; font-size: 1.1em; }
 	.ds-note { margin: 0; color: var(--ds-muted); }
+	.ds-unavailable { margin: 0 0 12px; padding: 10px 12px; border-radius: 8px; background: #fdf6e7; color: #6b4a0b; }
 	.ds-error { margin: 0 0 12px; padding: 10px 12px; border-radius: 8px; background: #fdf1ee; color: #8a2a17; }
 	.ds-days { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 8px; margin-bottom: 12px; }
 	.ds-day { padding: 8px 4px; border: 1px solid var(--ds-line); border-radius: 8px; background: #fff; color: inherit; font: inherit; cursor: pointer; }

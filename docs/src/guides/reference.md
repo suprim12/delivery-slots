@@ -12,6 +12,10 @@ Delivery Slots adds these to every Commerce order and cart:
 | `cart.getHasDeliverySlots('handle')` | Whether another shipping method has slots |
 | `cart.deliverySlot` | The chosen [slot](#delivery-slot), or `null` |
 | `cart.getFirstError('deliverySlot')` | Why the slot couldn’t be held or the order paid for |
+| `cart.deliverySlotsNeedAddress` | Whether the times depend on an address the customer hasn’t entered yet |
+| `cart.deliverySlotsUnavailableMethods` | The shipping methods not offered because the address is outside all of their [zones](/guides/zones) |
+| `cart.getFirstNotice('deliverySlotUnavailable')` | Set when a new address means the chosen time isn’t offered there; its `message` says so |
+| `craft.deliverySlots.picker(cart, options)` | The [ready-made picker](/guides/slot-picker#the-ready-made-picker) |
 
 ## Day
 

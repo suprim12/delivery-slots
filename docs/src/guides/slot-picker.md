@@ -17,7 +17,7 @@ It shows:
 - *Choose a delivery time* when the form is sent without one, so customers can’t go on to payment without a time;
 - a notice when a new address means the chosen time isn’t offered there any more;
 - *Enter your address to see delivery times* when the method has [zones](/guides/zones) and the customer hasn’t entered an address yet;
-- *There are no delivery times for this address* when no zone covers it;
+- *Local delivery isn’t available for Perth 6000* when the address is outside all of a method’s [zones](/guides/zones), so customers know why it’s missing from the shipping methods;
 - nothing when the cart’s shipping method has no slots.
 
 Options:
@@ -63,6 +63,11 @@ Put it in the form where customers choose a shipping method, which posts to `com
       {{ option.name }}: {{ option.priceAsCurrency }}
     </label>
   {% endfor %}
+
+  {% set unavailable = cart.deliverySlotsUnavailableMethods %}
+  {% if unavailable %}
+    <p>{{ unavailable|map(m => m.name)|join(', ', ' and ') }} isn’t available for this address.</p>
+  {% endif %}
 
   {% if cart.deliverySlotsNeedAddress %}
     <p>Enter your address to see delivery times.</p>

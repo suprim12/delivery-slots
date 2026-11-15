@@ -49,6 +49,17 @@ class OrderBehavior extends Behavior
     }
 
     /**
+     * The shipping methods not offered because the order’s address is outside all of their zones, so you can say why:
+     * “Local delivery isn’t available for Perth 6000”.
+     *
+     * @return \craft\commerce\models\ShippingMethod[]
+     */
+    public function getDeliverySlotsUnavailableMethods(): array
+    {
+        return Plugin::getInstance()->slots->getUnavailableMethods($this->owner);
+    }
+
+    /**
      * Whether the shipping method delivers to zones and the customer hasn’t entered an address yet, so its times can’t
      * be shown. Show a message such as “Enter your address to see delivery times”.
      */

@@ -142,6 +142,32 @@ class Slots extends Component
     }
 
     /**
+     * The shipping methods the order isn’t offered because its address is outside all of their zones, for a message
+     * such as “Local delivery isn’t available for Perth 6000”.
+     *
+     * @return ShippingMethod[]
+     */
+    public function getUnavailableMethods(Order $order): array
+    {
+        $zones = Plugin::getInstance()->zones;
+        if ($order->isCompleted || !$zones->hasAddress($order)) {
+            return [];
+        }
+        $methods = [];
+        foreach (\craft\commerce\Plugin::getInstance()->getShippingMethods()->getAllShippingMethods($order->storeId) as $method) {
+            if (!$method->id || !$method->getIsEnabled()) {
+                continue;
+            }
+            $schedule = Plugin::getInstance()->schedules->getEnabled($method->id);
+            if ($schedule && $zones->applies($schedule) && $zones->match($schedule, $order) === null) {
+                $methods[] = $method;
+            }
+        }
+
+        return $methods;
+    }
+
+    /**
      * Whether the order's shipping method offers slots.
      */
     public function hasSlots(Order $order, ShippingMethod|string|null $method = null): bool

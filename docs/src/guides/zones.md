@@ -42,7 +42,7 @@ Any entry with a drawn area can be a zone, so a store’s own delivery area work
 
 - **Shipping zones are checked first**, then drawn zones. Within each table, the first matching row is used: drag rows to put a small zone above a larger one around it.
 - **Before the customer enters an address**, the method is offered and the picker asks for an address, as the times depend on it.
-- **Addresses outside every zone get no slots, and the shipping method isn’t offered to them**, once the customer has entered an address. Pickup methods usually have no zones, so they’re still offered.
+- **Addresses outside every zone get no slots, and the shipping method isn’t offered to them**, once the customer has entered an address. The picker says why, such as *Local delivery isn’t available for Perth 6000*, or use `cart.deliverySlotsUnavailableMethods` in your own markup. Pickup methods usually have no zones, so they’re still offered.
 - **Days the zone doesn’t deliver** show as *Not in your area*.
 - **Orders per slot** counts only orders in the zone. With 4 for the Hills and 10 for the slot, the slot takes ten orders, at most four of them from the Hills.
 - **The fee** is added as a shipping adjustment called *Delivery time*, before tax, so it’s taxed like the rest of the shipping. Show it with `slot.fee` in the picker.
