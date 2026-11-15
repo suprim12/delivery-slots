@@ -1,4 +1,5 @@
 {% extends '_layouts/cp' %}
+{% import '_includes/forms' as forms %}
 
 {% set title = 'Delivery time'|t('delivery-slots') %}
 {% set crumbs = [
@@ -32,43 +33,47 @@
 		<p class="zilch">{{ 'No time windows run on this day.'|t('delivery-slots') }}</p>
 	{% else %}
 		{% if closedLabel %}<p class="warning with-icon">{{ 'This day is closed for customers ({label}). You can still choose a time.'|t('delivery-slots', { label: closedLabel }) }}</p>{% endif %}
-		<table class="data fullwidth">
-			<thead>
-				<tr>
-					<th scope="col">{{ 'Time'|t('delivery-slots') }}</th>
-					<th scope="col">{{ 'Orders'|t('delivery-slots') }}</th>
-					<th scope="col"></th>
-				</tr>
-			</thead>
-			<tbody>
-				{% for w in windows %}
+		<form method="post">
+			{{ csrfInput() }}
+			{{ actionInput('delivery-slots/orders/save') }}
+			{{ redirectInput(order.cpEditUrl) }}
+			{{ hiddenInput('orderId', order.id) }}
+			{{ hiddenInput('date', date|date('Y-m-d')) }}
+			<table class="data fullwidth">
+				<thead>
 					<tr>
-						<th scope="row">{{ w.label }}{% if w.current %} <span class="status green" style="margin-left: 8px;"></span>{{ 'Current'|t('delivery-slots') }}{% endif %}</th>
-						<td>
-							{% if w.closed %}
-								<span class="light">{{ 'Closed for customers on this day'|t('delivery-slots') }}</span>
-							{% else %}
-								{{ w.taken }} / {{ w.capacity }}{% if w.taken >= w.capacity %} <span class="light">· {{ 'Full'|t('delivery-slots') }}</span>{% endif %}
-							{% endif %}
-						</td>
-						<td class="thin">
-							{% if not w.current %}
-								<form method="post">
-									{{ csrfInput() }}
-									{{ actionInput('delivery-slots/orders/save') }}
-									{{ redirectInput(order.cpEditUrl) }}
-									{{ hiddenInput('orderId', order.id) }}
-									{{ hiddenInput('date', date|date('Y-m-d')) }}
-									{{ hiddenInput('start', w.start) }}
-									<button type="submit" class="btn small">{{ current ? 'Move here'|t('delivery-slots') : 'Choose'|t('delivery-slots') }}</button>
-								</form>
-							{% endif %}
-						</td>
+						<th scope="col">{{ 'Time'|t('delivery-slots') }}</th>
+						<th scope="col">{{ 'Orders'|t('delivery-slots') }}</th>
+						<th scope="col"></th>
 					</tr>
-				{% endfor %}
-			</tbody>
-		</table>
-		<p class="light">{{ 'Staff can choose any time, even when it’s full or closed for customers. The customer isn’t emailed about the change.'|t('delivery-slots') }}</p>
+				</thead>
+				<tbody>
+					{% for w in windows %}
+						<tr>
+							<th scope="row">{{ w.label }}{% if w.current %} <span class="status green" style="margin-left: 8px;"></span>{{ 'Current'|t('delivery-slots') }}{% endif %}</th>
+							<td>
+								{% if w.closed %}
+									<span class="light">{{ 'Closed for customers on this day'|t('delivery-slots') }}</span>
+								{% else %}
+									{{ w.taken }} / {{ w.capacity }}{% if w.taken >= w.capacity %} <span class="light">· {{ 'Full'|t('delivery-slots') }}</span>{% endif %}
+								{% endif %}
+							</td>
+							<td class="thin">
+								{% if not w.current %}
+									<button type="submit" class="btn small" name="start" value="{{ w.start }}">{{ current ? 'Move here'|t('delivery-slots') : 'Choose'|t('delivery-slots') }}</button>
+								{% endif %}
+							</td>
+						</tr>
+					{% endfor %}
+				</tbody>
+			</table>
+			{% if order.isCompleted and order.email %}
+				<div style="margin-top: 16px;">
+					{{ forms.checkbox({ name: 'notify', label: 'Email the customer their new time ({email})'|t('delivery-slots', { email: order.email }), checked: true }) }}
+				</div>
+			{% endif %}
+		</form>
+		<p class="light" style="margin-top: 12px;">{{ 'Staff can choose any time, even when it’s full or closed for customers.'|t('delivery-slots') }}</p>
 	{% endif %}
 
 	{% if current %}

@@ -42,6 +42,7 @@ use suprim\deliveryslots\adjusters\SlotFee;
 use suprim\deliveryslots\behaviors\OrderBehavior;
 use suprim\deliveryslots\conditions\DeliveryDateConditionRule;
 use suprim\deliveryslots\models\Settings;
+use suprim\deliveryslots\services\Notifications;
 use suprim\deliveryslots\services\RunSheets;
 use suprim\deliveryslots\services\Schedules;
 use suprim\deliveryslots\services\Slots;
@@ -58,6 +59,7 @@ use yii\base\ModelEvent as ValidateEvent;
  * @property-read Slots $slots
  * @property-read Zones $zones
  * @property-read RunSheets $runSheets
+ * @property-read Notifications $notifications
  * @method Settings getSettings()
  */
 class Plugin extends BasePlugin
@@ -82,6 +84,7 @@ class Plugin extends BasePlugin
                 'slots' => Slots::class,
                 'zones' => Zones::class,
                 'runSheets' => RunSheets::class,
+                'notifications' => Notifications::class,
             ],
         ];
     }

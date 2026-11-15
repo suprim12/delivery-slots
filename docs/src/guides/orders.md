@@ -12,14 +12,30 @@ While a customer is still checking out, it shows as **Delivery time (held)**.
 
 When a customer calls to change their time, click **Change** under the delivery time. Pick a day with the arrows, then **Move here** next to the new time.
 
-![Changing order bd8f81b’s delivery time: Wednesday 18 November’s six windows with how many orders each has, and a Move here button on each](/images/change-slot.jpg)
+![Changing order fbda8fa’s delivery time: Wednesday 18 November’s six windows with how many orders each has, a Move here button on each, and Email the customer their new time ticked](/images/change-slot.jpg)
 
 - Staff can choose any window that runs that day, even when it’s full or closed for customers.
 - **Remove the delivery time** takes the order out of its slot.
 - Orders without a slot, such as phone orders, show **Choose a time** instead.
-- The customer isn’t emailed. Let them know, or resend the order’s email from Commerce.
+- **Email the customer their new time** is ticked for completed orders. They get an email with the new time, the old one, the address and an *Add to calendar* link. Untick it to change the time quietly.
 
 Staff need Commerce’s **Edit orders** permission.
+
+### The email
+
+The built-in email is plain and works in every mail app. To send your own, make a site template and set `slotChangedTemplate` in the [config file](/getting-started/configuration). It gets `order`, `slot` (the new time) and `previousSlot` (the old one, or `null`):
+
+```twig
+{# templates/_emails/slot-changed.twig #}
+<p>Hi {{ order.shippingAddress.fullName ?? 'there' }},</p>
+<p>Your order {{ order.reference }} now arrives {{ slot.label }}.</p>
+{% if previousSlot %}<p>It was {{ previousSlot.label }}.</p>{% endif %}
+<p><a href="{{ slot.calendarUrl }}">Add to calendar</a></p>
+```
+
+Set its subject with `slotChangedSubject`, such as `'Green Grocer · order {reference} now arrives {slot}'`.
+
+The email is sent with Craft’s email settings (**Settings → Email**), from the system email address and sender name, so your shop’s name and address are on it.
 
 ## In templates
 

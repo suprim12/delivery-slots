@@ -272,7 +272,7 @@ sameDay: <label class="dh-edit"><span class="sr-only">Same-day slots</span><sele
       <h2 id="dh-features-title" data-reveal>Everything after the checkout, too</h2>
       <div class="dh-cells">
         <article class="dh-cell" data-reveal>
-          <div class="dh-cell__text"><h3>A run sheet for drivers</h3><p>Each day’s orders by slot, zone and suburb, with phone numbers. Print a page per slot.</p></div>
+          <div class="dh-cell__text"><h3>A run sheet for drivers</h3><p>Each day’s orders by slot, zone and suburb, with phone numbers. Print a page per slot, and mark orders delivered.</p></div>
           <img :src="withBase('/images/run-sheet.jpg')" width="1600" height="1060" alt="The run sheet: six slots with how full each is, and eight orders grouped by time" loading="lazy">
         </article>
         <article class="dh-cell dh-cell--flip" data-reveal>
@@ -280,7 +280,7 @@ sameDay: <label class="dh-edit"><span class="sr-only">Same-day slots</span><sele
           <img :src="withBase('/images/packing-list.jpg')" width="1600" height="597" alt="The packing list: four items with their quantity in each slot and a total" loading="lazy">
         </article>
         <article class="dh-cell" data-reveal>
-          <div class="dh-cell__text"><h3>Move an order</h3><p>A customer rings to change their time. Pick the new one from the order page, even if it’s full.</p></div>
+          <div class="dh-cell__text"><h3>Move an order</h3><p>A customer rings to change their time. Pick the new one from the order page, even if it’s full, and they’re emailed it.</p></div>
           <img :src="withBase('/images/change-slot.jpg')" width="1600" height="748" alt="Changing an order’s delivery time: each window with how many orders it has and a Move here button" loading="lazy">
         </article>
         <article class="dh-cell dh-cell--flip" data-reveal>

@@ -95,12 +95,22 @@ class OrdersController extends Controller
             return $this->asSuccess(Craft::t('delivery-slots', 'Delivery time removed.'));
         }
 
+        $previous = $slots->getBooking($order);
         $error = $slots->assign($order, (string)$this->request->getRequiredBodyParam('date'), (string)$this->request->getRequiredBodyParam('start'));
         if ($error !== null) {
             return $this->asFailure($error);
         }
+        $slot = $slots->getBooking($order);
+        $message = Craft::t('delivery-slots', 'Delivery time changed to {slot}.', ['slot' => (string)$slot]);
 
-        return $this->asSuccess(Craft::t('delivery-slots', 'Delivery time changed to {slot}.', ['slot' => (string)$slots->getBooking($order)]));
+        // Completed orders only: a customer still checking out sees the change in their cart.
+        if ($slot && $order->isCompleted && $this->request->getBodyParam('notify')) {
+            $message .= ' ' . (Plugin::getInstance()->notifications->sendSlotChanged($order, $slot, $previous)
+                ? Craft::t('delivery-slots', 'The customer was emailed.')
+                : Craft::t('delivery-slots', 'The customer couldn’t be emailed.'));
+        }
+
+        return $this->asSuccess($message);
     }
 
     private function order(int $id): Order

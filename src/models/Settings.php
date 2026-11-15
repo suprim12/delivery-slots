@@ -24,4 +24,22 @@ class Settings extends Model
 
     /** An order field to show as the delivery note on the run sheet, such as `deliveryInstructions`. */
     public ?string $noteField = null;
+
+    /**
+     * The handle of the Commerce order status that the run sheet’s **Delivered** button sets. The button shows
+     * when the store has a status with this handle.
+     */
+    public string $deliveredStatus = 'delivered';
+
+    /**
+     * A site template for the email customers get when staff change their slot, such as `_emails/slot-changed`.
+     * It gets `order`, `slot` and `previousSlot`. Leave it null for the built-in email.
+     */
+    public ?string $slotChangedTemplate = null;
+
+    /**
+     * The subject of that email. `{site}`, `{reference}` and `{slot}` are replaced with the site name, the order
+     * reference and the new time. Leave it null for “{site}: your new delivery time for order {reference}”.
+     */
+    public ?string $slotChangedSubject = null;
 }

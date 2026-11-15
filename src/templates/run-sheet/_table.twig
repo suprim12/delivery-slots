@@ -9,12 +9,13 @@
 				<th scope="col">{{ 'Zone'|t('delivery-slots') }}</th>
 				<th scope="col">{{ 'Items'|t('delivery-slots') }}</th>
 				{% if showNote %}<th scope="col">{{ 'Note'|t('delivery-slots') }}</th>{% endif %}
+				<th scope="col">{{ 'Status'|t('delivery-slots') }}</th>
 			</tr>
 		</thead>
 		{% for group in groups %}
 			<tbody class="ds-group">
 				<tr class="ds-group-head">
-					<th scope="rowgroup" colspan="{{ showNote ? 6 : 5 }}">{{ group.label }} <span class="light">· {{ '{count, plural, =1{# order} other{# orders}}'|t('delivery-slots', { count: group.rows|length }) }}</span></th>
+					<th scope="rowgroup" colspan="{{ showNote ? 7 : 6 }}">{{ group.label }} <span class="light">· {{ '{count, plural, =1{# order} other{# orders}}'|t('delivery-slots', { count: group.rows|length }) }}</span></th>
 				</tr>
 				{% for row in group.rows %}
 					<tr>
@@ -24,6 +25,18 @@
 						<td>{{ row.zone ?: '—' }}</td>
 						<td>{{ row.items }}</td>
 						{% if showNote %}<td>{{ row.note }}</td>{% endif %}
+						<td class="nowrap">
+							{% if row.status %}<span class="status {{ row.status.color }}"></span>{{ row.status.displayName ?? row.status.name }}{% endif %}
+							{% if (canMarkDelivered ?? false) and not (printView ?? false) and not row.delivered %}
+								<form method="post" style="display: inline-block; margin-left: 8px;">
+									{{ csrfInput() }}
+									{{ actionInput('delivery-slots/run-sheet/mark-delivered') }}
+									{{ redirectInput(craft.app.request.url) }}
+									{{ hiddenInput('orderId', row.order.id) }}
+									<button type="submit" class="btn small">{{ 'Mark delivered'|t('delivery-slots') }}</button>
+								</form>
+							{% endif %}
+						</td>
 					</tr>
 				{% endfor %}
 			</tbody>

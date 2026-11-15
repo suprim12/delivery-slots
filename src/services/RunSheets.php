@@ -261,6 +261,8 @@ class RunSheets extends Component
             'total' => $order->getTotalPrice(),
             'method' => isset($methods[$booking->shippingMethodId]) ? $methods[$booking->shippingMethodId]->getName() : '',
             'note' => $note,
+            'status' => $order->getOrderStatus(),
+            'delivered' => $order->getOrderStatus()?->handle === Plugin::getInstance()->getSettings()->deliveredStatus,
         ];
     }
 

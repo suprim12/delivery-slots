@@ -10,7 +10,11 @@
     }
   ],
   "support": {
-    "email": "support@suprim.com.au"
+    "email": "support@suprim.com.au",
+    "issues": "https://github.com/suprim12/delivery-slots/issues?state=open",
+    "source": "https://github.com/suprim12/delivery-slots",
+    "docs": "https://delivery-slots.suprim.com.au/",
+    "rss": "https://github.com/suprim12/delivery-slots/releases.atom"
   },
   "require": {
     "php": ">=8.2",
@@ -37,7 +41,9 @@
     "developer": "suprim",
     "class": "suprim\\deliveryslots\\Plugin",
     "developerUrl": "https://suprim.com.au",
-    "developerEmail": "support@suprim.com.au"
+    "developerEmail": "support@suprim.com.au",
+    "documentationUrl": "https://delivery-slots.suprim.com.au/",
+    "changelogUrl": "https://raw.githubusercontent.com/suprim12/delivery-slots/main/CHANGELOG.md"
   },
   "scripts": {
     "check-cs": "ecs check --ansi",
@@ -54,5 +60,17 @@
       "craftcms/plugin-installer": true
     }
   },
-  "keywords": ["craft", "cms", "craftcms", "craft-plugin", "commerce", "delivery", "time slots", "click and collect", "pickup", "local delivery", "scheduling"]
+  "keywords": [
+    "craft",
+    "cms",
+    "craftcms",
+    "craft-plugin",
+    "commerce",
+    "delivery",
+    "time slots",
+    "click and collect",
+    "pickup",
+    "local delivery",
+    "scheduling"
+  ]
 }

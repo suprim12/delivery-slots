@@ -14,7 +14,8 @@ Delivery Slots lets customers choose when their Craft Commerce order arrives, or
 - **Changes on a date.** Close one window or change its limit for a single day, such as when a driver is away.
 - **Run sheet and packing list.** Each day’s orders by slot, zone and suburb to print for drivers, and how many of each item to pack.
 - **Exports.** Orders or the packing list as CSV for any date range, from the control panel or the command line.
-- **Staff can move orders.** Change an order’s slot from the order page when a customer calls, even if it’s full.
+- **Staff can move orders.** Change an order’s slot from the order page when a customer calls, even if it’s full, and email them the new time.
+- **Mark delivered.** Tick orders off on the run sheet as drivers report back.
 - **At a glance.** A dashboard widget, and a Delivery time column and Delivery date filter on Commerce’s orders.
 - **Add to calendar.** A calendar file for confirmation emails.
 - **Payment check.** Customers can’t pay without a slot, or with one that has filled up.

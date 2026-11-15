@@ -10,6 +10,8 @@
 namespace suprim\deliveryslots\controllers;
 
 use Craft;
+use craft\commerce\elements\Order;
+use craft\commerce\Plugin as Commerce;
 use craft\helpers\DateTimeHelper;
 use craft\web\Controller;
 use DateInterval;
@@ -82,6 +84,32 @@ class RunSheetController extends Controller
     }
 
     /**
+     * Sets an order to the delivered order status, from the run sheet’s **Delivered** button.
+     */
+    public function actionMarkDelivered(): ?Response
+    {
+        $this->requirePostRequest();
+        $this->requirePermission('commerce-editOrders');
+        $order = Order::find()->id((int)$this->request->getRequiredBodyParam('orderId'))->status(null)->one();
+        if (!$order || !$order->isCompleted) {
+            throw new BadRequestHttpException('Order not found');
+        }
+        $handle = Plugin::getInstance()->getSettings()->deliveredStatus;
+        $status = Commerce::getInstance()->getOrderStatuses()->getOrderStatusByHandle($handle, $order->storeId);
+        if (!$status) {
+            return $this->asFailure(Craft::t('delivery-slots', 'There’s no order status with the handle {handle}.', ['handle' => $handle]));
+        }
+
+        $order->orderStatusId = $status->id;
+        $order->message = Craft::t('delivery-slots', 'Marked as delivered from the run sheet.');
+        if (!Craft::$app->getElements()->saveElement($order)) {
+            return $this->asFailure(Craft::t('delivery-slots', 'Couldn’t update order {reference}.', ['reference' => $order->reference ?: $order->getShortNumber()]));
+        }
+
+        return $this->asSuccess(Craft::t('delivery-slots', 'Order {reference} is marked as delivered.', ['reference' => $order->reference ?: $order->getShortNumber()]));
+    }
+
+    /**
      * @return array<string, mixed>
      */
     private function sheet(): array
@@ -105,7 +133,23 @@ class RunSheetController extends Controller
             'summary' => $methodId ? $runSheets->getSummary($ymd, $methodId) : [],
             'total' => count($rows),
             'showNote' => (bool)Plugin::getInstance()->getSettings()->noteField,
+            'canMarkDelivered' => $this->deliveredStatusExists() && Craft::$app->getUser()->checkPermission('commerce-editOrders'),
         ];
+    }
+
+    /**
+     * Whether any store has the order status the Delivered button sets.
+     */
+    private function deliveredStatusExists(): bool
+    {
+        $handle = Plugin::getInstance()->getSettings()->deliveredStatus;
+        foreach (Commerce::getInstance()->getStores()->getAllStores() as $store) {
+            if (Commerce::getInstance()->getOrderStatuses()->getOrderStatusByHandle($handle, $store->id)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

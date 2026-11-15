@@ -22,6 +22,10 @@ Bookings hold no names, emails, phone numbers or addresses. When an order is del
 - **The slot picker and JSON actions** show only the visitor’s own cart and how many places are left in each slot. They never show other customers’ orders.
 - **The calendar link** (`slot.calendarUrl`) uses the order’s 32-character number, which only the customer has. It works only for completed orders, and includes the shipping address as the event’s location.
 
+## Emails
+
+When staff change an order’s slot with **Email the customer** ticked, the customer gets an email at the order’s address, sent with Craft’s own email settings. Nothing else is emailed by the plugin.
+
 ## Sent to other services
 
 Delivery Slots doesn’t send data anywhere itself.

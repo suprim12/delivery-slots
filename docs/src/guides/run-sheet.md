@@ -2,7 +2,7 @@
 
 **Delivery Slots → Run sheet** shows a day’s booked orders, grouped by slot.
 
-![The run sheet for Tuesday 17 November: six slot cards showing how full each is, and eight orders grouped by time with customer, phone, address, zone and items](/images/run-sheet.jpg)
+![The run sheet for Tuesday 17 November: six slot cards showing how full each is, and eight orders grouped by time with customer, phone, address, zone, items and status; one is Delivered, the others have a Mark delivered button](/images/run-sheet.jpg)
 
 - **The date** starts at today. Use the arrows to move a day, or **Today** to come back.
 - **The shipping method** menu shows one method, or all of them.
@@ -29,6 +29,17 @@ To show phone numbers, add a Phone field (handle `phone`) to addresses under **S
 **Print** opens a plain page for the day and prints it, starting each slot on a new page so each driver gets their own.
 
 ![The printed run sheet: Run sheet, Tuesday 17 November 2026, Local delivery, 8 orders, with the orders grouped by slot](/images/print.jpg)
+
+## Marking orders delivered
+
+Each order has a **Status** column with its Commerce order status. **Mark delivered** sets the order to your *Delivered* status, so the team can tick orders off as drivers report back, and the order’s status history shows who did it.
+
+The button shows when:
+
+- your store has an order status with the handle `delivered` (create it in **Commerce → Store Management → Order Statuses**), or the handle you set with `deliveredStatus` in the [config file](/getting-started/configuration);
+- the user can edit orders.
+
+Give the status an email in Commerce, such as “Your order has been delivered”, and customers are told automatically.
 
 ## Packing list
 

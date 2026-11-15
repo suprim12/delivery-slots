@@ -17,6 +17,13 @@ return [
     // An order field to show on the run sheet as the delivery note, such as a
     // “Delivery instructions” field in your order field layout.
     'noteField' => 'deliveryInstructions',
+
+    // The order status the run sheet’s Mark delivered button sets.
+    'deliveredStatus' => 'delivered',
+
+    // Your own template and subject for the email customers get when staff change their slot.
+    'slotChangedTemplate' => '_emails/slot-changed',
+    'slotChangedSubject' => '{site}: your order {reference} now arrives {slot}',
 ];
 ```
 
@@ -25,6 +32,9 @@ return [
 | `holdMinutes` | `15` | How long a slot is [held](/guides/holds) while the customer checks out. Raise it for slow payment gateways, or set it to `0` so only paid orders take places |
 | `fewLeft` | `2` | When `slot.isLow` is true, for “2 left” notes |
 | `noteField` | `null` | The handle of an order field shown as a **Note** column on the [run sheet](/guides/run-sheet) and in the CSV |
+| `deliveredStatus` | `delivered` | The handle of the order status that **Mark delivered** sets ([run sheet](/guides/run-sheet#marking-orders-delivered)) |
+| `slotChangedTemplate` | `null` | A site template for the email sent when staff change a slot. `null` uses the built-in email ([Orders and Emails](/guides/orders#the-email)) |
+| `slotChangedSubject` | `null` | That email’s subject. `{site}`, `{reference}` and `{slot}` become the site name, order reference and new time. `null`: “{site}: your new delivery time for order {reference}” |
 
 Like any Craft config file, it can return different values per environment:
 

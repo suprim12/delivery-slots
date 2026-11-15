@@ -14,7 +14,8 @@ Built for grocers, florists, bakeries, butchers, meal kits, liquor stores and an
 - **Run sheet.** Each day’s orders by slot, zone and suburb, with how full each slot is. Print a page per slot for drivers.
 - **Packing list.** How many of each item to pack for the day, by slot.
 - **Exports.** Orders or the packing list as CSV for any date range, from the control panel or `php craft delivery-slots/export`.
-- **Change a slot.** Move an order to another time from the order page, even when it’s full. Close or change one slot on one date.
+- **Change a slot.** Move an order to another time from the order page, even when it’s full, and email the customer their new time. Close or change one slot on one date.
+- **Mark delivered.** Set orders to your Delivered status from the run sheet.
 - **Dashboard and Orders.** A widget showing how full today and tomorrow are, a Delivery time column and a Delivery date filter on Commerce → Orders.
 - **Add to calendar.** `order.deliverySlot.calendarUrl` downloads the slot as a calendar event.
 - **On the order.** The slot shows on the order in the control panel, and as `order.deliverySlot` in templates and emails.
@@ -109,6 +110,11 @@ return [
     'fewLeft' => 2,
     // An order field to show as the delivery note on the run sheet.
     'noteField' => 'deliveryInstructions',
+    // The order status the run sheet's Mark delivered button sets.
+    'deliveredStatus' => 'delivered',
+    // A site template and subject for the email sent when staff change a slot (null: the built-in ones).
+    'slotChangedTemplate' => null,
+    'slotChangedSubject' => null,
 ];
 ```
 
