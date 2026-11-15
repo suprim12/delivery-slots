@@ -6,11 +6,11 @@
 			{% if canEdit %}<div style="margin-top: 4px;"><a href="{{ url('delivery-slots/orders/' ~ order.id) }}">{{ slot ? 'Change'|t('delivery-slots') : 'Choose a time'|t('delivery-slots') }}</a></div>{% endif %}
 		</div>
 	</div>
-	{% set zone = slot ? slot.zone : null %}
-	{% if zone %}
+	{% set zoneName = slot ? slot.zoneName : null %}
+	{% if zoneName %}
 		<div class="data">
 			<h5 class="heading">{{ 'Zone'|t('delivery-slots') }}</h5>
-			<div class="value">{{ zone.title }}</div>
+			<div class="value">{{ zoneName }}</div>
 		</div>
 	{% endif %}
 </div>

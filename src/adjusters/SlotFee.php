@@ -36,7 +36,7 @@ class SlotFee extends Component implements AdjusterInterface
         $adjustment->description = $booking->getLabel();
         $adjustment->amount = $booking->fee;
         $adjustment->setOrder($order);
-        $adjustment->sourceSnapshot = ['deliverySlot' => $booking->getValue(), 'zoneId' => $booking->zoneId];
+        $adjustment->sourceSnapshot = ['deliverySlot' => $booking->getValue(), 'zoneId' => $booking->zoneId, 'zoneKey' => $booking->zoneKey, 'zoneName' => $booking->zoneName];
 
         return [$adjustment];
     }

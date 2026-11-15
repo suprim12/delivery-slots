@@ -21,6 +21,8 @@ use craft\db\ActiveRecord;
  * @property string $start H:i
  * @property string $end H:i
  * @property int|null $zoneId
+ * @property string|null $zoneKey
+ * @property string|null $zoneName
  * @property float|string $fee
  * @property string $status
  * @property string|null $expiresAt

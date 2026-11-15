@@ -122,9 +122,11 @@ abstract class TestCase extends BaseTestCase
     }
 
     /**
-     * A saved cart with one item, using the test method.
+     * A saved cart with one item, using the test method, and a shipping address if given.
+     *
+     * @param array<string, string>|null $address Such as `['countryCode' => 'AU', 'postalCode' => '5067']`.
      */
-    protected function cart(bool $withItems = true): Order
+    protected function cart(bool $withItems = true, ?array $address = null): Order
     {
         $commerce = Commerce::getInstance();
         $order = new Order([
@@ -134,6 +136,9 @@ abstract class TestCase extends BaseTestCase
         ]);
         if ($withItems) {
             $order->setLineItems([$commerce->getLineItems()->create($order, ['purchasableId' => Variant::find()->one()->id, 'qty' => 1])]);
+        }
+        if ($address !== null) {
+            $order->setShippingAddress(new \craft\elements\Address($address));
         }
         $order->shippingMethodHandle = $this->method->handle;
         $this->assertTrue(Craft::$app->getElements()->saveElement($order, false));

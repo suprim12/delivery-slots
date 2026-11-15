@@ -34,6 +34,12 @@ class DeliverySlot extends Model
     public string $start = '';
     public string $end = '';
     public ?int $zoneId = null;
+
+    /** The zone’s key: `entry:12` for a drawn zone, `postcode:inner-east` for a postcode zone. */
+    public ?string $zoneKey = null;
+
+    /** The zone’s name when the slot was chosen. */
+    public ?string $zoneName = null;
     public float $fee = 0.0;
     public string $status = BookingRecord::STATUS_HELD;
     public ?DateTime $expiresAt = null;
@@ -48,6 +54,8 @@ class DeliverySlot extends Model
             'start' => $record->start,
             'end' => $record->end,
             'zoneId' => $record->zoneId,
+            'zoneKey' => $record->zoneKey,
+            'zoneName' => $record->zoneName,
             'fee' => (float)$record->fee,
             'status' => $record->status,
             'expiresAt' => $record->expiresAt ? DateTimeHelper::toDateTime($record->expiresAt) ?: null : null,
@@ -105,6 +113,17 @@ class DeliverySlot extends Model
     public function getZone(): ?Entry
     {
         return $this->zoneId ? Entry::find()->id($this->zoneId)->status(null)->one() : null;
+    }
+
+    /** The zone’s name, for a drawn or a postcode zone, or null when the slot has no zone. */
+    public function getZoneName(): ?string
+    {
+        if ($this->zoneName !== null && $this->zoneName !== '') {
+            return $this->zoneName;
+        }
+        $zone = $this->getZone();
+
+        return $zone ? (string)$zone->title : null;
     }
 
     public function __toString(): string

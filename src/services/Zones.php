@@ -74,10 +74,21 @@ class Zones extends Component
      * The schedule's first zone that contains the order's shipping address, or null when there's none
      * (or the address can't be placed on the map).
      *
-     * @return array{zoneId: int, days: int[], capacity: int|null, fee: float}|null
+     * Postcode zones are checked first. `zoneId` is the zone entry's ID for a drawn zone, and null for a postcode zone.
+     *
+     * @return array{zoneId: int|null, key: string, name: string, days: int[], capacity: int|null, fee: float}|null
      */
     public function match(Schedule $schedule, Order $order): ?array
     {
+        // Postcode zones first: they’re exact, and need no map.
+        $address = $order->getShippingAddress() ?? $order->getEstimatedShippingAddress();
+        if ($schedule->postcodeZones && $address && $this->inStoreCountry($order, $address->countryCode)) {
+            foreach ($schedule->postcodeZones as $rule) {
+                if (Schedule::postcodeMatches((string)$address->postalCode, $rule['postcodes'])) {
+                    return ['zoneId' => null] + $rule;
+                }
+            }
+        }
         if (!$schedule->zones || !$this->isAvailable()) {
             return null;
         }
@@ -94,12 +105,45 @@ class Zones extends Component
             foreach ($zone->getFieldLayout()?->getCustomFields() ?? [] as $field) {
                 $value = $zone->getFieldValue($field->handle);
                 if ($value instanceof GeoValue && $value->contains($point)) {
-                    return $rule;
+                    return $rule + ['key' => 'entry:' . $rule['zoneId'], 'name' => (string)$zone->title];
                 }
             }
         }
 
         return null;
+    }
+
+    /**
+     * Whether the schedule’s zones are in use: it has postcode zones, or drawn zones and Geo Maps is installed.
+     */
+    public function applies(Schedule $schedule): bool
+    {
+        return $schedule->postcodeZones || ($schedule->zones && $this->isAvailable());
+    }
+
+    /**
+     * Whether the order’s address can be checked against the schedule’s zones yet: it has a postcode, or a place
+     * on the map. Before then, methods with zones aren’t hidden.
+     */
+    public function canPlace(Order $order, Schedule $schedule): bool
+    {
+        $address = $order->getShippingAddress() ?? $order->getEstimatedShippingAddress();
+        if ($schedule->postcodeZones && $address && trim((string)$address->postalCode) !== '') {
+            return true;
+        }
+
+        return $schedule->zones && $this->hasLocation($order);
+    }
+
+    /**
+     * Postcodes are only compared within the store’s own country, when the store has a location set.
+     */
+    private function inStoreCountry(Order $order, ?string $countryCode): bool
+    {
+        $store = $order->getStore()->getSettings()->getLocationAddress();
+        $storeCountry = $store?->countryCode;
+
+        return !$storeCountry || !$countryCode || strtoupper($storeCountry) === strtoupper($countryCode);
     }
 
     /**

@@ -55,7 +55,7 @@ class Slots extends Component
 
         $zone = null;
         $zones = Plugin::getInstance()->zones;
-        if ($schedule->zones && $zones->isAvailable()) {
+        if ($zones->applies($schedule)) {
             $zone = $zones->match($schedule, $order);
             if ($zone === null) {
                 return [];
@@ -71,7 +71,7 @@ class Slots extends Component
         for ($i = $schedule->sameDay ? 0 : 1; $i <= $schedule->daysAhead; $i++) {
             $dates[] = $today->add(new DateInterval("P{$i}D"));
         }
-        [$taken, $takenInZone] = $this->taken($method->id, $dates, $order->id, $zone['zoneId'] ?? null);
+        [$taken, $takenInZone] = $this->taken($method->id, $dates, $order->id, $zone['key'] ?? null);
 
         $days = [];
         foreach ($dates as $i => $date) {
@@ -179,6 +179,8 @@ class Slots extends Component
             $record->start = $slot->start;
             $record->end = $slot->end;
             $record->zoneId = $zone['zoneId'] ?? null;
+            $record->zoneKey = $zone['key'] ?? null;
+            $record->zoneName = $zone['name'] ?? null;
             $record->fee = $slot->fee;
             $record->status = BookingRecord::STATUS_HELD;
             $record->expiresAt = Db::prepareDateForDb($this->holdUntil());
@@ -403,11 +405,11 @@ class Slots extends Component
      * @param DateTimeImmutable[] $dates
      * @return array{0: array<string, array<string, int>>, 1: array<string, array<string, int>>}
      */
-    private function taken(int $methodId, array $dates, ?int $orderId, ?int $zoneId): array
+    private function taken(int $methodId, array $dates, ?int $orderId, ?string $zoneKey): array
     {
         // Orders in the trash don't take a place.
         $rows = (new Query())
-            ->select(['b.date', 'b.start', 'b.zoneId', 'count' => 'COUNT(*)'])
+            ->select(['b.date', 'b.start', 'b.zoneId', 'b.zoneKey', 'count' => 'COUNT(*)'])
             ->from(['b' => BookingRecord::TABLE_NAME])
             ->innerJoin(['e' => Table::ELEMENTS], '[[e.id]] = [[b.orderId]]')
             ->where([
@@ -419,7 +421,7 @@ class Slots extends Component
                 ['b.status' => BookingRecord::STATUS_BOOKED],
                 ['>', 'b.expiresAt', Db::prepareDateForDb(new DateTime('@' . $this->now()->getTimestamp()))],
             ])
-            ->groupBy(['b.date', 'b.start', 'b.zoneId']);
+            ->groupBy(['b.date', 'b.start', 'b.zoneId', 'b.zoneKey']);
         if ($orderId) {
             $rows->andWhere(['not', ['b.orderId' => $orderId]]);
         }
@@ -430,7 +432,9 @@ class Slots extends Component
         foreach ($rows as $row) {
             $date = substr((string)$row['date'], 0, 10);
             $all[$date][$row['start']] = ($all[$date][$row['start']] ?? 0) + (int)$row['count'];
-            if ($zoneId !== null && (int)$row['zoneId'] === $zoneId) {
+            // Bookings from before zone keys existed only have the zone entry’s ID.
+            $rowKey = $row['zoneKey'] ?: ($row['zoneId'] ? 'entry:' . $row['zoneId'] : null);
+            if ($zoneKey !== null && $rowKey === $zoneKey) {
                 $inZone[$date][$row['start']] = ($inZone[$date][$row['start']] ?? 0) + (int)$row['count'];
             }
         }

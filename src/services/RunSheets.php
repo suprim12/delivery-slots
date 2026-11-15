@@ -256,7 +256,7 @@ class RunSheets extends Component
             'address' => $address ? implode(', ', array_filter([$address->addressLine1, $address->addressLine2])) : '',
             'locality' => (string)($address->locality ?? ''),
             'postcode' => (string)($address->postalCode ?? ''),
-            'zone' => $booking->zoneId ? ($zoneNames[$booking->zoneId] ?? '') : '',
+            'zone' => $booking->zoneName ?: ($booking->zoneId ? ($zoneNames[$booking->zoneId] ?? '') : ''),
             'items' => $order->getTotalQty(),
             'total' => $order->getTotalPrice(),
             'method' => isset($methods[$booking->shippingMethodId]) ? $methods[$booking->shippingMethodId]->getName() : '',

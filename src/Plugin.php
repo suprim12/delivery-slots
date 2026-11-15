@@ -67,7 +67,7 @@ class Plugin extends BasePlugin
     public const PERMISSION_RUN_SHEET = 'deliverySlots-viewRunSheet';
     public const PERMISSION_SCHEDULES = 'deliverySlots-manageSchedules';
 
-    public string $schemaVersion = '1.0.0';
+    public string $schemaVersion = '1.1.0';
     public bool $hasCpSection = true;
 
     /** A slot posted with `commerce/cart/update-cart`, applied when the cart saves. */
@@ -224,13 +224,13 @@ class Plugin extends BasePlugin
         // Methods with zones aren't offered to addresses outside them.
         Event::on(ShippingMethods::class, ShippingMethods::EVENT_REGISTER_AVAILABLE_SHIPPING_METHODS, function(RegisterAvailableShippingMethodsEvent $event) {
             $order = $event->order;
-            if ($order->isCompleted || !$this->zones->isAvailable()) {
+            if ($order->isCompleted) {
                 return;
             }
             $methods = [];
             foreach ($event->getShippingMethods() as $method) {
                 $schedule = $method instanceof ShippingMethod && $method->id ? $this->schedules->getEnabled($method->id) : null;
-                if ($schedule && $schedule->zones && $this->zones->hasLocation($order) && $this->zones->match($schedule, $order) === null) {
+                if ($schedule && $this->zones->applies($schedule) && $this->zones->canPlace($order, $schedule) && $this->zones->match($schedule, $order) === null) {
                     continue;
                 }
                 $methods[] = $method;

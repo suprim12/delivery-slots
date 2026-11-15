@@ -85,6 +85,12 @@ class SchedulesController extends Controller
                 'capacity' => $z['capacity'],
                 'fee' => $z['fee'] ?: '',
             ] + $this->dayCells($z['days']), $schedule->zones),
+            'postcodeZoneRows' => array_map(fn($z) => [
+                'name' => $z['name'],
+                'postcodes' => implode(', ', $z['postcodes']),
+                'capacity' => $z['capacity'],
+                'fee' => $z['fee'] ?: '',
+            ] + $this->dayCells($z['days']), $schedule->postcodeZones),
             'zonesAvailable' => $zones->isAvailable(),
             'zoneOptions' => $zones->options(),
             'cutoff' => $schedule->cutoff ? $this->time($schedule->cutoff) : null,
@@ -112,6 +118,7 @@ class SchedulesController extends Controller
             'overrides' => $request->getBodyParam('overrides') ?: [],
             // Keep saved zones if Geo Maps has been removed, so they come back when it's reinstalled.
             'zones' => Plugin::getInstance()->zones->isAvailable() ? ($request->getBodyParam('zones') ?: []) : $schedule->zones,
+            'postcodeZones' => $request->getBodyParam('postcodeZones') ?: [],
         ]);
 
         if (!Plugin::getInstance()->schedules->save($schedule)) {

@@ -125,9 +125,28 @@
 
 	<hr>
 
+	{{ forms.editableTableField({
+		label: 'Postcode zones'|t('delivery-slots'),
+		instructions: 'Deliver only to these postcodes: exact (5067), ranges (5000-5099) or prefixes (SW1*), separated by commas. Postcode zones are checked first, and only for addresses in your store’s country. Leave days unticked to use the schedule’s days, and orders per slot blank for no zone limit.'|t('delivery-slots'),
+		id: 'postcodeZones',
+		name: 'postcodeZones',
+		cols: {
+			name: { type: 'singleline', heading: 'Name'|t('delivery-slots') },
+			postcodes: { type: 'singleline', heading: 'Postcodes'|t('delivery-slots') },
+		}|merge(dayColumns)|merge({
+			capacity: { type: 'number', heading: 'Orders per slot'|t('delivery-slots'), thin: true },
+			fee: { type: 'number', heading: 'Slot fee'|t('delivery-slots'), thin: true },
+		}),
+		rows: postcodeZoneRows,
+		allowAdd: true,
+		allowDelete: true,
+		allowReorder: true,
+		addRowLabel: 'Add a postcode zone'|t('delivery-slots'),
+	}) }}
+
 	{% if zonesAvailable %}
 		{{ forms.editableTableField({
-			label: 'Zones'|t('delivery-slots'),
+			label: 'Drawn zones'|t('delivery-slots'),
 			instructions: 'Areas drawn with Geo Maps. When you add zones, only addresses inside one get slots, and the shipping method isn’t offered elsewhere. The first matching zone is used. Leave days unticked to use the schedule’s days, and orders per slot blank for no zone limit.'|t('delivery-slots'),
 			id: 'zones',
 			name: 'zones',
@@ -148,8 +167,8 @@
 		{% endif %}
 	{% else %}
 		<div class="field">
-			<div class="heading"><label>{{ 'Zones'|t('delivery-slots') }}</label></div>
-			<p class="light">{{ 'Install Geo Maps 1.4 or later to draw delivery zones and give each one its own days, limits and fee.'|t('delivery-slots') }}</p>
+			<div class="heading"><label>{{ 'Drawn zones'|t('delivery-slots') }}</label></div>
+			<p class="light">{{ 'Install Geo Maps 1.4 or later to draw delivery areas on a map, as well as using postcodes.'|t('delivery-slots') }}</p>
 		</div>
 	{% endif %}
 {% endblock %}

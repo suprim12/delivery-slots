@@ -10,7 +10,7 @@ Built for grocers, florists, bakeries, butchers, meal kits, liquor stores and an
 - **Orders per slot.** Full slots can’t be chosen. A slot is held for 15 minutes while the customer pays, so two people can’t take the last place.
 - **Ordering rules.** Next-day cut-off (“order by 8pm for tomorrow”), same-day slots, a minimum lead time and how many days ahead to show.
 - **Closed days.** Public holidays and stocktakes, with a label customers see.
-- **Delivery zones.** With [Geo Maps](https://plugins.craftcms.com/geomaps), draw zones on a map and give each its own delivery days, order limit and slot fee. Addresses outside every zone aren’t offered the shipping method.
+- **Delivery zones.** List postcodes, or draw areas on a map with [Geo Maps](https://plugins.craftcms.com/geomaps), and give each zone its own delivery days, order limit and slot fee. Addresses outside every zone aren’t offered the shipping method.
 - **Run sheet.** Each day’s orders by slot, zone and suburb, with how full each slot is. Print a page per slot for drivers.
 - **Packing list.** How many of each item to pack for the day, by slot.
 - **Exports.** Orders or the packing list as CSV for any date range, from the control panel or `php craft delivery-slots/export`.
@@ -23,7 +23,7 @@ Built for grocers, florists, bakeries, butchers, meal kits, liquor stores and an
 
 ## Requirements
 
-Craft CMS 5.6+ and Craft Commerce 5. Zones need Geo Maps 1.4 or later (Lite or Pro).
+Craft CMS 5.6+ and Craft Commerce 5. Drawn zones need Geo Maps 1.4 or later (Lite or Pro); postcode zones need nothing else.
 
 ## Setting up
 
@@ -89,7 +89,8 @@ To show the slots for a shipping method before it’s chosen, pass its handle: `
 | `label` | Day and times: “Monday 17 November, 8 – 10am” |
 | `timeLabel` | Times only: “8 – 10am” |
 | `startDate`, `endDate` | Dates, for your own formatting |
-| `zone` | The Geo Maps zone entry, if the schedule has zones |
+| `zone` | The Geo Maps zone entry, for a drawn zone |
+| `zoneName` | The zone’s name, for a postcode or drawn zone |
 | `fee` | The slot’s fee |
 | `isBooked` | `true` once the order is complete, `false` while it’s held |
 
