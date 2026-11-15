@@ -1,0 +1,29 @@
+{# What to pack for the day: each item's quantity by slot. Used by the control panel page and the print view. #}
+{% if packing.items|length %}
+	<table class="data fullwidth ds-packing">
+		<thead>
+			<tr>
+				<th scope="col">{{ 'Item'|t('delivery-slots') }}</th>
+				<th scope="col">{{ 'SKU'|t('delivery-slots') }}</th>
+				{% for label in packing.slots %}
+					<th scope="col" class="ds-num">{{ label }}</th>
+				{% endfor %}
+				<th scope="col" class="ds-num">{{ 'Total'|t('delivery-slots') }}</th>
+			</tr>
+		</thead>
+		<tbody>
+			{% for item in packing.items %}
+				<tr>
+					<th scope="row">{{ item.description }}</th>
+					<td class="light">{{ item.sku }}</td>
+					{% for key, label in packing.slots %}
+						<td class="ds-num">{{ item.bySlot[key] ?? '' }}</td>
+					{% endfor %}
+					<td class="ds-num"><strong>{{ item.total }}</strong></td>
+				</tr>
+			{% endfor %}
+		</tbody>
+	</table>
+{% else %}
+	<p class="zilch">{{ 'Nothing to pack for this day.'|t('delivery-slots') }}</p>
+{% endif %}

@@ -2,23 +2,30 @@
 {% set title = 'Run sheet'|t('delivery-slots') %}
 {% set selectedSubnavItem = 'run-sheet' %}
 {% set query = methodId ? { method: methodId } : {} %}
+{% set viewQuery = sheetView == 'packing' ? { view: 'packing' } : {} %}
+{% set tabs = {
+	orders: { label: 'Orders'|t('delivery-slots'), url: url('delivery-slots/run-sheet', query|merge({ date: date|date('Y-m-d') })) },
+	packing: { label: 'Packing list'|t('delivery-slots'), url: url('delivery-slots/run-sheet', query|merge({ date: date|date('Y-m-d'), view: 'packing' })) },
+} %}
+{% set selectedTab = sheetView %}
 
 {% block actionButton %}
-	<a class="btn" href="{{ url('delivery-slots/run-sheet/export', query|merge({ date: date|date('Y-m-d') })) }}">{{ 'Export CSV'|t('delivery-slots') }}</a>
-	<a class="btn submit" href="{{ url('delivery-slots/run-sheet/print', query|merge({ date: date|date('Y-m-d') })) }}" target="_blank" rel="noopener">{{ 'Print'|t('delivery-slots') }}</a>
+	<a class="btn" href="{{ url('delivery-slots/run-sheet/export-form', query|merge({ date: date|date('Y-m-d') })) }}">{{ 'Export…'|t('delivery-slots') }}</a>
+	<a class="btn submit" href="{{ url('delivery-slots/run-sheet/print', query|merge(viewQuery)|merge({ date: date|date('Y-m-d') })) }}" target="_blank" rel="noopener">{{ 'Print'|t('delivery-slots') }}</a>
 {% endblock %}
 
 {% block toolbar %}
 	<div class="flex">
 		<div class="btngroup">
-			<a class="btn" href="{{ url('delivery-slots/run-sheet', query|merge({ date: prev })) }}" aria-label="{{ 'Previous day'|t('delivery-slots') }}" data-icon="leftangle"></a>
-			<a class="btn" href="{{ url('delivery-slots/run-sheet', query) }}">{{ 'Today'|t('delivery-slots') }}</a>
-			<a class="btn" href="{{ url('delivery-slots/run-sheet', query|merge({ date: next })) }}" aria-label="{{ 'Next day'|t('delivery-slots') }}" data-icon="rightangle"></a>
+			<a class="btn" href="{{ url('delivery-slots/run-sheet', query|merge(viewQuery)|merge({ date: prev })) }}" aria-label="{{ 'Previous day'|t('delivery-slots') }}" data-icon="leftangle"></a>
+			<a class="btn" href="{{ url('delivery-slots/run-sheet', query|merge(viewQuery)) }}">{{ 'Today'|t('delivery-slots') }}</a>
+			<a class="btn" href="{{ url('delivery-slots/run-sheet', query|merge(viewQuery)|merge({ date: next })) }}" aria-label="{{ 'Next day'|t('delivery-slots') }}" data-icon="rightangle"></a>
 		</div>
 		<h2 style="margin: 0 12px;">{{ date|date('l j F Y') }}</h2>
 		{% if methods|length > 1 %}
 			<form method="get" class="flex">
 				{{ hiddenInput('date', date|date('Y-m-d')) }}
+				{% if sheetView == 'packing' %}{{ hiddenInput('view', 'packing') }}{% endif %}
 				<div class="select">
 					<select name="method" onchange="this.form.submit()" aria-label="{{ 'Shipping method'|t('delivery-slots') }}">
 						<option value="">{{ 'All shipping methods'|t('delivery-slots') }}</option>
@@ -48,7 +55,11 @@
 			</div>
 		{% endif %}
 
-		{% include 'delivery-slots/run-sheet/_table' %}
+		{% if sheetView == 'packing' %}
+			{% include 'delivery-slots/run-sheet/_packing' %}
+		{% else %}
+			{% include 'delivery-slots/run-sheet/_table' %}
+		{% endif %}
 	{% endif %}
 
 	{% css %}
@@ -58,5 +69,6 @@
 	.ds-bar__fill { height: 6px; background: #3f4d5a; }
 	.ds-bar__fill--full { background: #c2410c; }
 	.ds-sheet .ds-group-head th { background: #f3f7fc; font-weight: 600; }
+	.ds-packing .ds-num { text-align: right; width: 1%; white-space: nowrap; }
 	{% endcss %}
 {% endblock %}

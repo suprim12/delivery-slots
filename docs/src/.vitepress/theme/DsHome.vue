@@ -48,6 +48,9 @@ const features = [
   { title: 'Closed days', text: 'Public holidays and stocktakes, with a label customers see in the picker.' },
   { title: 'Checked at payment', text: 'Customers can’t pay without a slot, or with one that filled up while they were checking out.' },
   { title: 'Your own markup', text: 'The picker is plain Twig and a form field. Style it to match your checkout, or use the JSON actions.' },
+  { title: 'Packing list and exports', text: 'How many of each item to pack per slot, and CSV exports for any date range, from the control panel or the command line.' },
+  { title: 'Change a slot for a customer', text: 'Move an order to another time from the order page, even when it’s full. Close or change one slot on one date.' },
+  { title: 'Add to calendar', text: 'A calendar file for the confirmation email, and a dashboard widget showing how full today and tomorrow are.' },
 ]
 
 const examples = [
@@ -141,7 +144,7 @@ const snippet = `{% for day in cart.deliverySlotDays %}
       <div>
         <p class="dh-eyebrow">The run sheet</p>
         <h2 class="dh-h2">Tomorrow’s orders, by slot and suburb.</h2>
-        <p class="dh-text">See how full each slot is, and every order grouped by time, zone and suburb, with phone numbers. Print a page per slot for each driver, or export a CSV for your routing app.</p>
+        <p class="dh-text">See how full each slot is, and every order grouped by time, zone and suburb, with phone numbers. Print a page per slot for each driver, see how many of each item to pack, or export a week to CSV for your routing app.</p>
         <a class="dh-link" :href="withBase('/guides/run-sheet')">The run sheet →</a>
       </div>
       <img :src="withBase('/images/run-sheet.jpg')" alt="The run sheet: six slots with how full they are, and eight orders grouped by time" width="1600" height="1060" loading="lazy">

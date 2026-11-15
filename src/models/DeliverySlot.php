@@ -11,8 +11,10 @@ namespace suprim\deliveryslots\models;
 
 use Craft;
 use craft\base\Model;
+use craft\commerce\elements\Order;
 use craft\elements\Entry;
 use craft\helpers\DateTimeHelper;
+use craft\helpers\UrlHelper;
 use DateTime;
 use DateTimeImmutable;
 use DateTimeZone;
@@ -82,6 +84,16 @@ class DeliverySlot extends Model
         $day = Craft::$app->getFormatter()->asDate(DateTime::createFromImmutable($this->getStartDate()), 'php:l j F');
 
         return $day . ', ' . $this->getTimeLabel();
+    }
+
+    /**
+     * A link to download the slot as a calendar event (.ics), for the order confirmation page and emails.
+     */
+    public function getCalendarUrl(): ?string
+    {
+        $number = $this->orderId ? Order::find()->id($this->orderId)->status(null)->select(['commerce_orders.number'])->scalar() : null;
+
+        return $number ? UrlHelper::siteUrl(UrlHelper::actionUrl('delivery-slots/calendar', ['number' => $number], null, false)) : null;
     }
 
     public function getIsBooked(): bool

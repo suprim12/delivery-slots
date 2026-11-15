@@ -41,6 +41,18 @@ Dates with no slots, such as public holidays or a stocktake. The label is shown 
 
 Weekdays with no windows, such as Sunday above, are closed every week; you don’t need to add them.
 
+## Changes on a date
+
+A different limit for one window on one date, without changing the weekly schedule. Use it when a driver is away (fewer orders), for a big catering order (more), or to close one window for the day (0).
+
+| Column | Description |
+|---|---|
+| **Date** | The day |
+| **Window starting** | The start time of the window to change, such as 8:00 AM |
+| **Orders per slot** | The limit for that window on that day. 0 closes it |
+
+To close the whole day, use **Closed days** instead.
+
 ## Zones
 
 With Geo Maps installed, add the areas you deliver to, and give each its own days, order limit and fee. See [Delivery Zones](/guides/zones).

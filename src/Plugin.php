@@ -10,31 +10,43 @@
 namespace suprim\deliveryslots;
 
 use Craft;
+use craft\base\conditions\BaseCondition;
 use craft\base\Element;
 use craft\base\Model;
 use craft\base\Plugin as BasePlugin;
 use craft\commerce\adjusters\Tax;
+use craft\commerce\controllers\BaseFrontEndController;
 use craft\commerce\controllers\CartController;
 use craft\commerce\controllers\PaymentsController;
+use craft\commerce\elements\conditions\orders\OrderCondition;
 use craft\commerce\elements\Order;
+use craft\commerce\events\ModifyCartInfoEvent;
 use craft\commerce\events\RegisterAvailableShippingMethodsEvent;
 use craft\commerce\models\ShippingMethod;
 use craft\commerce\services\OrderAdjustments;
 use craft\commerce\services\ShippingMethods;
+use craft\events\DefineAttributeHtmlEvent;
 use craft\events\DefineBehaviorsEvent;
 use craft\events\ModelEvent;
 use craft\events\RegisterComponentTypesEvent;
+use craft\events\RegisterConditionRulesEvent;
+use craft\events\RegisterElementTableAttributesEvent;
 use craft\events\RegisterUrlRulesEvent;
 use craft\events\RegisterUserPermissionsEvent;
+use craft\helpers\Html;
+use craft\services\Dashboard;
 use craft\services\UserPermissions;
 use craft\web\Controller;
 use craft\web\UrlManager;
 use suprim\deliveryslots\adjusters\SlotFee;
 use suprim\deliveryslots\behaviors\OrderBehavior;
+use suprim\deliveryslots\conditions\DeliveryDateConditionRule;
 use suprim\deliveryslots\models\Settings;
+use suprim\deliveryslots\services\RunSheets;
 use suprim\deliveryslots\services\Schedules;
 use suprim\deliveryslots\services\Slots;
 use suprim\deliveryslots\services\Zones;
+use suprim\deliveryslots\widgets\SlotsWidget;
 use yii\base\ActionEvent;
 use yii\base\Event;
 use yii\base\ModelEvent as ValidateEvent;
@@ -45,6 +57,7 @@ use yii\base\ModelEvent as ValidateEvent;
  * @property-read Schedules $schedules
  * @property-read Slots $slots
  * @property-read Zones $zones
+ * @property-read RunSheets $runSheets
  * @method Settings getSettings()
  */
 class Plugin extends BasePlugin
@@ -68,6 +81,7 @@ class Plugin extends BasePlugin
                 'schedules' => Schedules::class,
                 'slots' => Slots::class,
                 'zones' => Zones::class,
+                'runSheets' => RunSheets::class,
             ],
         ];
     }
@@ -165,7 +179,7 @@ class Plugin extends BasePlugin
             $value = $this->_postedSlot;
             $this->_postedSlot = null;
             if (($error = $this->slots->choose($order, $value)) !== null) {
-                Craft::warning("Couldn’t hold delivery slot $value for a new cart: $error", 'delivery-slots');
+                Craft::warning('Couldn’t hold delivery slot ' . json_encode(mb_substr($value, 0, 40)) . " for a new cart: $error", 'delivery-slots');
             }
         });
 
@@ -185,6 +199,23 @@ class Plugin extends BasePlugin
                 $order->addError('deliverySlot', $error);
                 $event->isValid = false;
             }
+        });
+
+        // The slot in the cart JSON that Commerce's cart actions return, for headless checkouts.
+        Event::on(BaseFrontEndController::class, BaseFrontEndController::EVENT_MODIFY_CART_INFO, function(ModifyCartInfoEvent $event) {
+            $slot = $this->slots->getBooking($event->cart);
+            $event->cartInfo['deliverySlot'] = $slot ? [
+                'value' => $slot->getValue(),
+                'label' => $slot->getLabel(),
+                'timeLabel' => $slot->getTimeLabel(),
+                'date' => $slot->date,
+                'start' => $slot->start,
+                'end' => $slot->end,
+                'fee' => $slot->fee,
+                'zoneId' => $slot->zoneId,
+                'isBooked' => $slot->getIsBooked(),
+            ] : null;
+            $event->cartInfo['hasDeliverySlots'] = $this->slots->hasSlots($event->cart);
         });
 
         // Methods with zones aren't offered to addresses outside them.
@@ -222,6 +253,8 @@ class Plugin extends BasePlugin
             $event->rules['delivery-slots/run-sheet'] = 'delivery-slots/run-sheet/index';
             $event->rules['delivery-slots/run-sheet/print'] = 'delivery-slots/run-sheet/print';
             $event->rules['delivery-slots/run-sheet/export'] = 'delivery-slots/run-sheet/export';
+            $event->rules['delivery-slots/run-sheet/export-form'] = 'delivery-slots/run-sheet/export-form';
+            $event->rules['delivery-slots/orders/<orderId:\d+>'] = 'delivery-slots/orders/edit';
             $event->rules['delivery-slots/schedules'] = 'delivery-slots/schedules/index';
             $event->rules['delivery-slots/schedules/<shippingMethodId:\d+>'] = 'delivery-slots/schedules/edit';
         });
@@ -232,11 +265,37 @@ class Plugin extends BasePlugin
                 return '';
             }
             $slot = $this->slots->getBooking($order);
-            if (!$slot) {
+            if (!$slot && !$this->slots->hasSlots($order)) {
                 return '';
             }
 
-            return Craft::$app->getView()->renderTemplate('delivery-slots/_order-details', ['slot' => $slot, 'order' => $order]);
+            return Craft::$app->getView()->renderTemplate('delivery-slots/_order-details', [
+                'slot' => $slot,
+                'order' => $order,
+                'canEdit' => Craft::$app->getUser()->checkPermission('commerce-editOrders'),
+            ]);
+        });
+
+        Event::on(Dashboard::class, Dashboard::EVENT_REGISTER_WIDGET_TYPES, function(RegisterComponentTypesEvent $event) {
+            $event->types[] = SlotsWidget::class;
+        });
+
+        // Orders index: a Delivery time column and a Delivery date filter.
+        Event::on(Order::class, Element::EVENT_REGISTER_TABLE_ATTRIBUTES, function(RegisterElementTableAttributesEvent $event) {
+            $event->tableAttributes['deliverySlot'] = ['label' => Craft::t('delivery-slots', 'Delivery time')];
+        });
+        Event::on(Order::class, Element::EVENT_DEFINE_ATTRIBUTE_HTML, function(DefineAttributeHtmlEvent $event) {
+            if ($event->attribute === 'deliverySlot') {
+                /** @var Order $order */
+                $order = $event->sender;
+                $slot = $this->slots->getBooking($order);
+                $event->html = $slot
+                    ? Html::encode(Craft::$app->getFormatter()->asDate(\DateTime::createFromImmutable($slot->getStartDate()), 'php:D j M') . ', ' . $slot->getTimeLabel())
+                    : '';
+            }
+        });
+        Event::on(OrderCondition::class, BaseCondition::EVENT_REGISTER_CONDITION_RULES, function(RegisterConditionRulesEvent $event) {
+            $event->conditionRules[] = DeliveryDateConditionRule::class;
         });
     }
 }

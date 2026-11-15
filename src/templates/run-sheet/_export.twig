@@ -1,0 +1,39 @@
+{% extends '_layouts/cp' %}
+{% import '_includes/forms' as forms %}
+
+{% set title = 'Export'|t('delivery-slots') %}
+{% set selectedSubnavItem = 'run-sheet' %}
+{% set crumbs = [
+	{ label: 'Delivery Slots'|t('delivery-slots'), url: url('delivery-slots') },
+	{ label: 'Run sheet'|t('delivery-slots'), url: url('delivery-slots/run-sheet') },
+] %}
+
+{% block content %}
+	<form method="get" action="{{ url('delivery-slots/run-sheet/export') }}">
+		<div class="flex flex-nowrap" style="gap: 24px; align-items: flex-start;">
+			{{ forms.dateField({ label: 'From'|t('delivery-slots'), name: 'from', value: from }) }}
+			{{ forms.dateField({ label: 'To'|t('delivery-slots'), name: 'to', value: to }) }}
+		</div>
+
+		{% if methods|length > 1 %}
+			{{ forms.selectField({
+				label: 'Shipping method'|t('delivery-slots'),
+				name: 'method',
+				options: [{ label: 'All shipping methods'|t('delivery-slots'), value: '' }]|merge(methods|map(m => { label: m.name, value: m.id })|values),
+				value: methodId,
+			}) }}
+		{% endif %}
+
+		{{ forms.radioGroupField({
+			label: 'Export'|t('delivery-slots'),
+			name: 'type',
+			options: [
+				{ label: 'Orders: one row per order, with its slot, customer, address and zone'|t('delivery-slots'), value: 'orders' },
+				{ label: 'Packing list: each item’s total quantity, by slot'|t('delivery-slots'), value: 'packing' },
+			],
+			value: 'orders',
+		}) }}
+
+		<button type="submit" class="btn submit">{{ 'Download CSV'|t('delivery-slots') }}</button>
+	</form>
+{% endblock %}

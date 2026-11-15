@@ -35,6 +35,7 @@ export default defineConfig({
           { text: 'Setting Up a Schedule', link: '/getting-started/schedules' },
           { text: 'Configuration', link: '/getting-started/configuration' },
           { text: 'Troubleshooting', link: '/getting-started/troubleshooting' },
+          { text: 'Privacy and Data', link: '/getting-started/privacy' },
         ],
       },
       {
@@ -43,7 +44,7 @@ export default defineConfig({
           { text: 'The Slot Picker', link: '/guides/slot-picker' },
           { text: 'Holds and Payment', link: '/guides/holds' },
           { text: 'Delivery Zones', link: '/guides/zones' },
-          { text: 'The Run Sheet', link: '/guides/run-sheet' },
+          { text: 'Run Sheet and Exports', link: '/guides/run-sheet' },
           { text: 'Orders and Emails', link: '/guides/orders' },
           { text: 'JavaScript Checkouts', link: '/guides/javascript' },
           { text: 'Template Reference', link: '/guides/reference' },

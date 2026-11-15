@@ -10,22 +10,18 @@
 namespace suprim\deliveryslots\controllers;
 
 use Craft;
-use craft\commerce\elements\Order;
-use craft\commerce\models\ShippingMethod;
-use craft\commerce\Plugin as Commerce;
-use craft\elements\Address;
-use craft\elements\Entry;
+use craft\helpers\DateTimeHelper;
 use craft\web\Controller;
 use DateInterval;
+use DateTime;
 use DateTimeImmutable;
 use DateTimeZone;
-use suprim\deliveryslots\models\DeliverySlot;
-use suprim\deliveryslots\models\Times;
 use suprim\deliveryslots\Plugin;
+use yii\web\BadRequestHttpException;
 use yii\web\Response;
 
 /**
- * The run sheet: a day's booked orders, by slot.
+ * The run sheet: a day's booked orders by slot, the packing list, and CSV exports.
  */
 class RunSheetController extends Controller
 {
@@ -34,6 +30,7 @@ class RunSheetController extends Controller
         if (!parent::beforeAction($action)) {
             return false;
         }
+        $this->requireCpRequest();
         $this->requirePermission(Plugin::PERMISSION_RUN_SHEET);
 
         return true;
@@ -49,31 +46,39 @@ class RunSheetController extends Controller
         return $this->renderTemplate('delivery-slots/run-sheet/_print', $this->sheet());
     }
 
+    /**
+     * The export form: a date range, a shipping method, and orders or the packing list.
+     */
+    public function actionExportForm(): Response
+    {
+        $date = $this->date('date');
+
+        return $this->renderTemplate('delivery-slots/run-sheet/_export', [
+            'from' => DateTime::createFromImmutable($date),
+            'to' => DateTime::createFromImmutable($date->add(new DateInterval('P6D'))),
+            'methods' => Plugin::getInstance()->runSheets->getMethods(),
+            'methodId' => $this->methodId(),
+        ]);
+    }
+
+    /**
+     * Downloads booked orders, or what to pack, as CSV: `?from=2026-11-17&to=2026-11-23&method=1&type=packing`.
+     */
     public function actionExport(): Response
     {
-        $sheet = $this->sheet();
-        $noteField = Plugin::getInstance()->getSettings()->noteField;
-
-        $out = fopen('php://temp', 'r+');
-        $header = ['Date', 'Slot', 'Order', 'Customer', 'Email', 'Phone', 'Address', 'Suburb', 'Postcode', 'Zone', 'Items', 'Shipping method'];
-        if ($noteField) {
-            $header[] = 'Note';
+        $from = $this->date('from', 'date');
+        $to = $this->date('to', 'date');
+        if ($to < $from) {
+            throw new BadRequestHttpException('The end date is before the start date.');
         }
-        fputcsv($out, $header);
-        foreach ($sheet['groups'] as $group) {
-            foreach ($group['rows'] as $row) {
-                $line = [$sheet['date']->format('Y-m-d'), $group['label'], $row['reference'], $row['name'], $row['email'], $row['phone'], $row['address'], $row['locality'], $row['postcode'], $row['zone'], $row['items'], $row['method']];
-                if ($noteField) {
-                    $line[] = $row['note'];
-                }
-                fputcsv($out, $line);
-            }
-        }
-        rewind($out);
-        $csv = (string)stream_get_contents($out);
-        fclose($out);
+        $runSheets = Plugin::getInstance()->runSheets;
+        $rows = $runSheets->getRows($from->format('Y-m-d'), $to->format('Y-m-d'), $this->methodId());
+        $packing = $this->request->getParam('type') === 'packing';
+        $csv = $packing ? $runSheets->packingToCsv($runSheets->getPackingList($rows)) : $runSheets->toCsv($rows);
 
-        return $this->response->sendContentAsFile($csv, 'run-sheet-' . $sheet['date']->format('Y-m-d') . '.csv', ['mimeType' => 'text/csv']);
+        $name = ($packing ? 'packing-list-' : 'deliveries-') . $from->format('Y-m-d') . ($to > $from ? '-to-' . $to->format('Y-m-d') : '');
+
+        return $this->response->sendContentAsFile($csv, "$name.csv", ['mimeType' => 'text/csv']);
     }
 
     /**
@@ -81,129 +86,49 @@ class RunSheetController extends Controller
      */
     private function sheet(): array
     {
-        $request = Craft::$app->getRequest();
-        $tz = new DateTimeZone(Craft::$app->getTimeZone());
-        $dateParam = $request->getQueryParam('date');
-        $date = is_string($dateParam) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateParam)
-            ? new DateTimeImmutable($dateParam, $tz)
-            : Plugin::getInstance()->slots->now()->setTime(0, 0);
-
-        // Shipping methods with schedules, for the filter.
-        $methods = [];
-        foreach (Commerce::getInstance()->getStores()->getAllStores() as $store) {
-            foreach (Commerce::getInstance()->getShippingMethods()->getAllShippingMethods($store->id) as $method) {
-                if ($method->id && Plugin::getInstance()->schedules->getByShippingMethodId($method->id)) {
-                    $methods[$method->id] = $method;
-                }
-            }
-        }
-        $methodId = (int)$request->getQueryParam('method') ?: null;
-        if ($methodId && !isset($methods[$methodId])) {
-            $methodId = null;
-        }
-
-        $bookings = Plugin::getInstance()->slots->getBookedOn($date->format('Y-m-d'), $methodId);
-        $orders = [];
-        if ($bookings) {
-            foreach (Order::find()->id(array_map(fn(DeliverySlot $b) => $b->orderId, $bookings))->status(null)->all() as $order) {
-                $orders[$order->id] = $order;
-            }
-        }
-        $zoneNames = [];
-        $zoneIds = array_values(array_filter(array_unique(array_map(fn(DeliverySlot $b) => $b->zoneId, $bookings))));
-        if ($zoneIds) {
-            foreach (Entry::find()->id($zoneIds)->status(null)->site('*')->unique()->all() as $zone) {
-                $zoneNames[$zone->id] = (string)$zone->title;
-            }
-        }
-
-        $noteField = Plugin::getInstance()->getSettings()->noteField;
-        $groups = [];
-        foreach ($bookings as $booking) {
-            $order = $orders[$booking->orderId] ?? null;
-            if (!$order) {
-                continue;
-            }
-            $key = $booking->start . '-' . $booking->end;
-            $groups[$key] ??= ['start' => $booking->start, 'end' => $booking->end, 'label' => Times::range($booking->start, $booking->end), 'rows' => []];
-            $groups[$key]['rows'][] = $this->row($order, $booking, $zoneNames, $methods, $noteField);
-        }
-        foreach ($groups as &$group) {
-            usort($group['rows'], fn($a, $b) => [$a['zone'], $a['locality'], $a['address']] <=> [$b['zone'], $b['locality'], $b['address']]);
-        }
-        unset($group);
-        ksort($groups);
-
-        // How full each window is, when one shipping method is shown.
-        $summary = [];
-        $schedule = $methodId ? Plugin::getInstance()->schedules->getByShippingMethodId($methodId) : null;
-        if ($schedule) {
-            foreach ($schedule->windowsOn((int)$date->format('N')) as $window) {
-                $key = $window['start'] . '-' . $window['end'];
-                $summary[] = [
-                    'label' => Times::range($window['start'], $window['end']),
-                    'count' => count($groups[$key]['rows'] ?? []),
-                    'capacity' => $window['capacity'],
-                ];
-            }
-        }
+        $date = $this->date('date');
+        $ymd = $date->format('Y-m-d');
+        $methodId = $this->methodId();
+        $runSheets = Plugin::getInstance()->runSheets;
+        $rows = $runSheets->getRows($ymd, $ymd, $methodId);
+        $tab = $this->request->getQueryParam('view') === 'packing' ? 'packing' : 'orders';
 
         return [
             'date' => $date,
             'prev' => $date->sub(new DateInterval('P1D'))->format('Y-m-d'),
             'next' => $date->add(new DateInterval('P1D'))->format('Y-m-d'),
-            'methods' => $methods,
+            'methods' => $runSheets->getMethods(),
             'methodId' => $methodId,
-            'groups' => array_values($groups),
-            'summary' => $summary,
-            'total' => array_sum(array_map(fn($g) => count($g['rows']), $groups)),
-            'showNote' => (bool)$noteField,
+            'sheetView' => $tab,
+            'groups' => $runSheets->groupBySlot($rows),
+            'packing' => $runSheets->getPackingList($rows),
+            'summary' => $methodId ? $runSheets->getSummary($ymd, $methodId) : [],
+            'total' => count($rows),
+            'showNote' => (bool)Plugin::getInstance()->getSettings()->noteField,
         ];
     }
 
     /**
-     * @param array<int, string> $zoneNames
-     * @param array<int, ShippingMethod> $methods
-     * @return array<string, mixed>
+     * A date from the query string (Y-m-d, or a date field's value), or today.
      */
-    private function row(Order $order, DeliverySlot $booking, array $zoneNames, array $methods, ?string $noteField): array
+    private function date(string $param, ?string $fallbackParam = null): DateTimeImmutable
     {
-        $address = $order->getShippingAddress();
-        $note = '';
-        if ($noteField && $order->getFieldLayout()->getFieldByHandle($noteField)) {
-            $note = trim((string)$order->getFieldValue($noteField));
+        $tz = new DateTimeZone(Craft::$app->getTimeZone());
+        $value = $this->request->getParam($param) ?? ($fallbackParam ? $this->request->getParam($fallbackParam) : null);
+        if (is_string($value) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $value)) {
+            return new DateTimeImmutable($value, $tz);
+        }
+        if (is_array($value) && ($parsed = DateTimeHelper::toDateTime($value, true))) {
+            return new DateTimeImmutable($parsed->format('Y-m-d'), $tz);
         }
 
-        return [
-            'order' => $order,
-            'reference' => $order->reference ?: $order->getShortNumber(),
-            'name' => $address?->fullName ?: (string)$order->getCustomer()?->getName(),
-            'email' => (string)$order->getEmail(),
-            'phone' => $this->phone($address),
-            'address' => $address ? implode(', ', array_filter([$address->addressLine1, $address->addressLine2])) : '',
-            'locality' => (string)($address->locality ?? ''),
-            'postcode' => (string)($address->postalCode ?? ''),
-            'zone' => $booking->zoneId ? ($zoneNames[$booking->zoneId] ?? '') : '',
-            'items' => $order->getTotalQty(),
-            'method' => isset($methods[$booking->shippingMethodId]) ? $methods[$booking->shippingMethodId]->getName() : '',
-            'note' => $note,
-        ];
+        return Plugin::getInstance()->slots->now()->setTime(0, 0);
     }
 
-    /**
-     * The address's phone number, when its field layout has a Phone field.
-     */
-    private function phone(?Address $address): string
+    private function methodId(): ?int
     {
-        if (!$address) {
-            return '';
-        }
-        foreach (['phone', 'phoneNumber', 'telephone'] as $handle) {
-            if ($address->getFieldLayout()?->getFieldByHandle($handle)) {
-                return trim((string)$address->getFieldValue($handle));
-            }
-        }
+        $methodId = (int)$this->request->getParam('method') ?: null;
 
-        return '';
+        return $methodId && isset(Plugin::getInstance()->runSheets->getMethods()[$methodId]) ? $methodId : null;
     }
 }

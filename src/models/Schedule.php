@@ -48,6 +48,13 @@ class Schedule extends Model
     public array $closedDates = [];
 
     /**
+     * One-off changes to a slot on a date: a different limit, or 0 to close it.
+     *
+     * @var array<int, array{date: string, start: string, capacity: int, label: string}>
+     */
+    public array $overrides = [];
+
+    /**
      * Geo Maps zones, in order. When any are set, addresses outside all of them get no slots.
      *
      * @var array<int, array{zoneId: int, days: int[], capacity: int|null, fee: float}>
@@ -80,6 +87,7 @@ class Schedule extends Model
             'cutoff' => $this->cutoff,
             'daysAhead' => $this->daysAhead,
             'closedDates' => array_values($this->closedDates),
+            'overrides' => array_values($this->overrides),
             'zones' => array_values($this->zones),
         ];
     }
@@ -123,6 +131,24 @@ class Schedule extends Model
         ksort($closed);
         $this->closedDates = array_values($closed);
 
+        $overrides = [];
+        foreach ((array)($settings['overrides'] ?? []) as $row) {
+            $date = self::date($row['date'] ?? null);
+            $start = self::time($row['start'] ?? null);
+            if ($date === null || $start === null) {
+                continue;
+            }
+            $capacity = $row['capacity'] ?? 0;
+            $overrides["$date@$start"] = [
+                'date' => $date,
+                'start' => $start,
+                'capacity' => max(0, (int)($capacity === '' ? 0 : $capacity)),
+                'label' => trim((string)($row['label'] ?? '')),
+            ];
+        }
+        ksort($overrides);
+        $this->overrides = array_values($overrides);
+
         $zones = [];
         foreach ((array)($settings['zones'] ?? []) as $row) {
             $zoneId = (int)(is_array($row['zoneId'] ?? null) ? reset($row['zoneId']) : ($row['zoneId'] ?? 0));
@@ -150,6 +176,43 @@ class Schedule extends Model
         return array_values(array_filter($this->windows, fn($w) => in_array($weekday, $w['days'], true)));
     }
 
+    /**
+     * The windows on a date (Y-m-d), with that date's one-off limits applied. Slots closed for the date are left out.
+     *
+     * @return array<int, array{start: string, end: string, days: int[], capacity: int}>
+     */
+    public function windowsFor(string $date): array
+    {
+        $weekday = (int)(new \DateTimeImmutable($date))->format('N');
+        $windows = [];
+        foreach ($this->windowsOn($weekday) as $window) {
+            $override = $this->override($date, $window['start']);
+            if ($override !== null) {
+                if ($override['capacity'] === 0) {
+                    continue;
+                }
+                $window['capacity'] = $override['capacity'];
+            }
+            $windows[] = $window;
+        }
+
+        return $windows;
+    }
+
+    /**
+     * @return array{date: string, start: string, capacity: int, label: string}|null
+     */
+    public function override(string $date, string $start): ?array
+    {
+        foreach ($this->overrides as $override) {
+            if ($override['date'] === $date && $override['start'] === $start) {
+                return $override;
+            }
+        }
+
+        return null;
+    }
+
     public function closedLabel(string $date): ?string
     {
         foreach ($this->closedDates as $closed) {
@@ -165,8 +228,19 @@ class Schedule extends Model
     {
         return [
             [['windows'], 'validateWindows'],
+            [['overrides'], 'validateOverrides'],
             [['leadHours', 'daysAhead'], 'integer', 'min' => 0],
         ];
+    }
+
+    public function validateOverrides(): void
+    {
+        $starts = array_column($this->windows, 'start');
+        foreach ($this->overrides as $override) {
+            if (!in_array($override['start'], $starts, true)) {
+                $this->addError('overrides', Craft::t('delivery-slots', '{date}: no window starts at {time}.', ['date' => $override['date'], 'time' => $override['start']]));
+            }
+        }
     }
 
     public function validateWindows(): void

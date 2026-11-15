@@ -30,9 +30,54 @@ To show phone numbers, add a Phone field (handle `phone`) to addresses under **S
 
 ![The printed run sheet: Run sheet, Tuesday 17 November 2026, Local delivery, 8 orders, with the orders grouped by slot](/images/print.jpg)
 
-## Export CSV
+## Packing list
 
-**Export CSV** downloads the day’s orders with these columns: Date, Slot, Order, Customer, Email, Phone, Address, Suburb, Postcode, Zone, Items, Shipping method, and Note when it’s set. Import it into a routing app to plan the drive.
+The **Packing list** tab adds up the day’s orders: how many of each item, by slot. Pack the 8am orders first, or bake the right number of loaves.
+
+![The packing list for Tuesday 17 November: four items with their quantity in each slot, such as Seasonal veg box: 2 at 8 – 10am, 3 at 10am – 12pm, 1 at 4 – 6pm, 6 in total](/images/packing-list.jpg)
+
+**Print** on this tab prints the packing list.
+
+## Export
+
+**Export…** downloads a CSV for a day or a date range, such as next week:
+
+![The Export page: From and To dates, a shipping method, and a choice of Orders or Packing list](/images/export.jpg)
+
+- **Orders:** Date, Slot, Order, Customer, Email, Phone, Address, Suburb, Postcode, Zone, Items, Total, Shipping method, and Note when it’s set. Import it into a routing app or a spreadsheet.
+- **Packing list:** each item with its SKU, its quantity in each slot, and the total.
+
+Values that start with `=`, `+`, `-` or `@`, such as a name a customer typed, are prefixed with an apostrophe so spreadsheets don’t run them as formulas.
+
+### From the command line
+
+The same exports, for scripts and scheduled jobs:
+
+```bash
+php craft delivery-slots/export --from=tomorrow --output=deliveries.csv
+php craft delivery-slots/export --from=2026-11-17 --to=2026-11-23 --type=packing
+```
+
+| Option | Description |
+|---|---|
+| `--from` | The first day: a date, `today` or `tomorrow`. Default: today |
+| `--to` | The last day. Default: the same as `--from` |
+| `--method` | A shipping method handle. Default: every method with slots |
+| `--type` | `orders` (default) or `packing` |
+| `--output` | The file to write. Without it, the CSV is printed |
+
+## Dashboard widget
+
+Add the **Delivery Slots** widget to the dashboard to see how full today’s and tomorrow’s slots are. Choose one shipping method in its settings, or show them all.
+
+![The Delivery Slots widget: today’s two windows for Local delivery with how many are booked, and tomorrow with no delivery times](/images/widget.jpg)
+
+## On the Orders page
+
+In **Commerce → Orders**:
+
+- Add the **Delivery time** column from the table’s column settings.
+- Filter by **Delivery date**, such as *Tomorrow* or a date range, to find the orders for a day.
 
 ## Who can see it
 

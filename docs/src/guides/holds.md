@@ -13,6 +13,8 @@ If the customer takes longer, the hold runs out, and someone else can take the p
 
 Choosing again, or saving the cart with the same slot, renews the hold.
 
+Only carts with something in them can hold a slot, so slots can’t be filled by visitors who aren’t shopping. To turn holds off, set `holdMinutes` to `0`: then only paid orders take places, and the last place goes to whoever pays first.
+
 ## Payment
 
 When an order’s shipping method has slots, Commerce’s payment form (`commerce/payments/pay`) checks the slot first. Payment doesn’t go ahead, and the order shows an error on `deliverySlot`, when:

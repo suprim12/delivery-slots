@@ -50,6 +50,12 @@ foreach (DeliverySlots::getInstance()->slots->getBookedOn($tomorrow) as $slot) {
 }
 ```
 
-## Calendar files
+## Add to calendar
 
-To let customers add the slot to their calendar, link to an `.ics` file built from `slot.startDate` and `slot.endDate` in a template of your own.
+`slot.calendarUrl` downloads the slot as a calendar event, with the shipping address as its location:
+
+```twig
+<a href="{{ order.deliverySlot.calendarUrl }}">Add to calendar</a>
+```
+
+The link uses the order’s number, which only the customer has, and works once the order is complete.

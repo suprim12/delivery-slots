@@ -1,0 +1,29 @@
+{% for day in days %}
+	<h3 style="margin: {{ loop.first ? '0' : '18px' }} 0 6px;">{{ day.label }} <span class="light" style="font-weight: normal;">· {{ day.date|date('D j M') }}</span></h3>
+	{% for s in day.sections %}
+		<div style="margin-bottom: 10px;">
+			<div class="flex flex-nowrap" style="justify-content: space-between;">
+				<a href="{{ s.url }}">{{ s.method.name }}</a>
+				<span class="light">{{ '{count} of {capacity} booked'|t('delivery-slots', { count: s.count, capacity: s.capacity }) }}</span>
+			</div>
+			<table class="data fullwidth" style="margin-top: 4px;">
+				<tbody>
+					{% for w in s.summary %}
+						{% set pct = w.capacity ? min(100, (w.count / w.capacity * 100)|round) : 0 %}
+						<tr>
+							<td style="width: 40%; padding-left: 0;">{{ w.label }}</td>
+							<td>
+								<div style="height: 6px; border-radius: 3px; background: #e4e9f0; overflow: hidden;">
+									<div style="height: 6px; width: {{ pct }}%; background: {{ w.count >= w.capacity ? '#c2410c' : '#3f4d5a' }};"></div>
+								</div>
+							</td>
+							<td class="light" style="width: 1%; white-space: nowrap; text-align: right; padding-right: 0;">{{ w.count }} / {{ w.capacity }}</td>
+						</tr>
+					{% endfor %}
+				</tbody>
+			</table>
+		</div>
+	{% else %}
+		<p class="light">{{ 'No delivery times on this day.'|t('delivery-slots') }}</p>
+	{% endfor %}
+{% endfor %}

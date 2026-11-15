@@ -60,4 +60,31 @@ Choosing a slot also recalculates the cart, so a [zone fee](/guides/zones) shows
 
 You can also post `deliverySlot` with Commerce’s own `commerce/cart/update-cart` action over Ajax, along with other cart changes.
 
+## In Commerce’s cart JSON
+
+Commerce’s cart actions, such as `commerce/cart/update-cart` and `commerce/cart/get-cart` with `Accept: application/json`, return the cart with two more keys:
+
+```json
+{
+  "cart": {
+    "hasDeliverySlots": true,
+    "deliverySlot": {
+      "value": "2026-11-16@08:00",
+      "label": "Monday 16 November, 8 – 10am",
+      "timeLabel": "8 – 10am",
+      "date": "2026-11-16",
+      "start": "08:00",
+      "end": "10:00",
+      "fee": 0,
+      "zoneId": 281,
+      "isBooked": false
+    }
+  }
+}
+```
+
+`deliverySlot` is `null` until a slot is chosen.
+
+Commerce doesn’t have orders or carts in its GraphQL API, so headless checkouts use these actions.
+
 A complete picker is in the [JavaScript example](/examples/javascript-picker).

@@ -2,7 +2,7 @@
 <html lang="{{ craft.app.language }}">
 <head>
 	<meta charset="utf-8">
-	<title>{{ 'Run sheet'|t('delivery-slots') }} · {{ date|date('l j F Y') }}</title>
+	<title>{{ sheetView == 'packing' ? 'Packing list'|t('delivery-slots') : 'Run sheet'|t('delivery-slots') }} · {{ date|date('l j F Y') }}</title>
 	<style>
 		body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; color: #1f2933; margin: 24px; font-size: 12pt; }
 		h1 { font-size: 18pt; margin: 0 0 4px; }
@@ -14,6 +14,7 @@
 		.light { color: #52606d; font-weight: normal; }
 		.smalltext { font-size: 10pt; }
 		.zilch { color: #52606d; }
+		.ds-num { text-align: right; white-space: nowrap; }
 		@media print {
 			body { margin: 0; }
 			.ds-group { break-before: page; }
@@ -24,9 +25,13 @@
 	</style>
 </head>
 <body>
-	<h1>{{ 'Run sheet'|t('delivery-slots') }} · {{ date|date('l j F Y') }}</h1>
+	<h1>{{ sheetView == 'packing' ? 'Packing list'|t('delivery-slots') : 'Run sheet'|t('delivery-slots') }} · {{ date|date('l j F Y') }}</h1>
 	<p class="meta">{{ methodId ? methods[methodId].name : 'All shipping methods'|t('delivery-slots') }} · {{ '{count, plural, =1{# order} other{# orders}}'|t('delivery-slots', { count: total }) }}</p>
-	{% include 'delivery-slots/run-sheet/_table' with { printView: true } %}
+	{% if sheetView == 'packing' %}
+		{% include 'delivery-slots/run-sheet/_packing' %}
+	{% else %}
+		{% include 'delivery-slots/run-sheet/_table' with { printView: true } %}
+	{% endif %}
 	<script>window.addEventListener('load', function () { window.print(); });</script>
 </body>
 </html>

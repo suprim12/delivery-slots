@@ -8,6 +8,19 @@ An order’s delivery time and zone show in the order’s details, under **Deliv
 
 While a customer is still checking out, it shows as **Delivery time (held)**.
 
+## Changing an order’s slot
+
+When a customer calls to change their time, click **Change** under the delivery time. Pick a day with the arrows, then **Move here** next to the new time.
+
+![Changing order bd8f81b’s delivery time: Wednesday 18 November’s six windows with how many orders each has, and a Move here button on each](/images/change-slot.jpg)
+
+- Staff can choose any window that runs that day, even when it’s full or closed for customers.
+- **Remove the delivery time** takes the order out of its slot.
+- Orders without a slot, such as phone orders, show **Choose a time** instead.
+- The customer isn’t emailed. Let them know, or resend the order’s email from Commerce.
+
+Staff need Commerce’s **Edit orders** permission.
+
 ## In templates
 
 `order.deliverySlot` is the order’s slot, or `null`. It works on carts, completed orders, order pages and Commerce emails.
@@ -32,6 +45,7 @@ This outputs “Local delivery: Tuesday 17 November, 8 – 10am”.
 | `zone` | | The [zone](/guides/zones) entry, or `null` |
 | `fee` | 4 | The slot’s fee |
 | `isBooked` | | `true` once the order is complete |
+| `calendarUrl` | | A link that downloads the slot as a calendar event (`.ics`), for completed orders |
 | `value` | 2026-11-17@08:00 | The value posted as `deliverySlot` |
 
 The slot only counts for the order’s current shipping method. If the method changes, `order.deliverySlot` is `null` until a new slot is chosen.

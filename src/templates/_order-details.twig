@@ -1,9 +1,12 @@
 <div class="meta read-only" style="margin-top: var(--m, 14px);">
 	<div class="data">
-		<h5 class="heading">{{ slot.isBooked ? 'Delivery time'|t('delivery-slots') : 'Delivery time (held)'|t('delivery-slots') }}</h5>
-		<div class="value">{{ slot.label }}</div>
+		<h5 class="heading">{{ slot and not slot.isBooked ? 'Delivery time (held)'|t('delivery-slots') : 'Delivery time'|t('delivery-slots') }}</h5>
+		<div class="value">
+			{{ slot ? slot.label : '—' }}
+			{% if canEdit %}<br><a href="{{ url('delivery-slots/orders/' ~ order.id) }}">{{ slot ? 'Change'|t('delivery-slots') : 'Choose a time'|t('delivery-slots') }}</a>{% endif %}
+		</div>
 	</div>
-	{% set zone = slot.zone %}
+	{% set zone = slot ? slot.zone : null %}
 	{% if zone %}
 		<div class="data">
 			<h5 class="heading">{{ 'Zone'|t('delivery-slots') }}</h5>

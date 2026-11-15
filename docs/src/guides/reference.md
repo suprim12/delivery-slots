@@ -51,6 +51,7 @@ Delivery Slots adds these to every Commerce order and cart:
 | `zone` | The zone entry, or `null` |
 | `fee` | The slot’s fee |
 | `isBooked` | `true` once the order is complete, `false` while it’s held |
+| `calendarUrl` | A link to download the slot as a calendar event (`.ics`). Works for completed orders |
 
 ## Form fields
 

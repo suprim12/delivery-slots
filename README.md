@@ -11,7 +11,12 @@ Built for grocers, florists, bakeries, butchers, meal kits, liquor stores and an
 - **Ordering rules.** Next-day cut-off (“order by 8pm for tomorrow”), same-day slots, a minimum lead time and how many days ahead to show.
 - **Closed days.** Public holidays and stocktakes, with a label customers see.
 - **Delivery zones.** With [Geo Maps](https://plugins.craftcms.com/geomaps), draw zones on a map and give each its own delivery days, order limit and slot fee. Addresses outside every zone aren’t offered the shipping method.
-- **Run sheet.** Each day’s orders by slot, zone and suburb, with how full each slot is. Print a page per slot for drivers, or export CSV.
+- **Run sheet.** Each day’s orders by slot, zone and suburb, with how full each slot is. Print a page per slot for drivers.
+- **Packing list.** How many of each item to pack for the day, by slot.
+- **Exports.** Orders or the packing list as CSV for any date range, from the control panel or `php craft delivery-slots/export`.
+- **Change a slot.** Move an order to another time from the order page, even when it’s full. Close or change one slot on one date.
+- **Dashboard and Orders.** A widget showing how full today and tomorrow are, a Delivery time column and a Delivery date filter on Commerce → Orders.
+- **Add to calendar.** `order.deliverySlot.calendarUrl` downloads the slot as a calendar event.
 - **On the order.** The slot shows on the order in the control panel, and as `order.deliverySlot` in templates and emails.
 - **Payment is checked.** Customers can’t pay without a slot, or with one that has filled up.
 
@@ -98,7 +103,7 @@ Create `config/delivery-slots.php` to change these:
 
 ```php
 return [
-    // How long a chosen slot is held while the customer pays, in minutes.
+    // How long a chosen slot is held while the customer pays, in minutes. 0 means only paid orders take places.
     'holdMinutes' => 15,
     // Slots with this many places or fewer count as nearly full (slot.isLow).
     'fewLeft' => 2,

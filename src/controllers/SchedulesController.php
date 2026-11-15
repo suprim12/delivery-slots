@@ -30,6 +30,7 @@ class SchedulesController extends Controller
         if (!parent::beforeAction($action)) {
             return false;
         }
+        $this->requireCpRequest();
         $this->requirePermission(Plugin::PERMISSION_SCHEDULES);
 
         return true;
@@ -74,6 +75,11 @@ class SchedulesController extends Controller
                 'date' => new DateTime($c['date'], new DateTimeZone(Craft::$app->getTimeZone())),
                 'label' => $c['label'],
             ], $schedule->closedDates),
+            'overrideRows' => array_map(fn($o) => [
+                'date' => new DateTime($o['date'], new DateTimeZone(Craft::$app->getTimeZone())),
+                'start' => $this->time($o['start']),
+                'capacity' => $o['capacity'],
+            ], $schedule->overrides),
             'zoneRows' => array_map(fn($z) => [
                 'zoneId' => $z['zoneId'],
                 'capacity' => $z['capacity'],
@@ -103,6 +109,7 @@ class SchedulesController extends Controller
             'cutoff' => $request->getBodyParam('cutoff'),
             'daysAhead' => $request->getBodyParam('daysAhead'),
             'closedDates' => $request->getBodyParam('closedDates') ?: [],
+            'overrides' => $request->getBodyParam('overrides') ?: [],
             // Keep saved zones if Geo Maps has been removed, so they come back when it's reinstalled.
             'zones' => Plugin::getInstance()->zones->isAvailable() ? ($request->getBodyParam('zones') ?: []) : $schedule->zones,
         ]);

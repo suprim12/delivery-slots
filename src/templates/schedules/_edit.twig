@@ -104,6 +104,25 @@
 		addRowLabel: 'Add a date'|t('delivery-slots'),
 	}) }}
 
+	{{ forms.editableTableField({
+		label: 'Changes on a date'|t('delivery-slots'),
+		instructions: 'A different limit for one window on one date, such as fewer orders when a driver is away. Use 0 to close the window that day. The window is the one that starts at this time.'|t('delivery-slots'),
+		id: 'overrides',
+		name: 'overrides',
+		cols: {
+			date: { type: 'date', heading: 'Date'|t('delivery-slots') },
+			start: { type: 'time', heading: 'Window starting'|t('delivery-slots') },
+			capacity: { type: 'number', heading: 'Orders per slot'|t('delivery-slots'), thin: true },
+		},
+		rows: overrideRows,
+		defaultValues: { capacity: 0 },
+		allowAdd: true,
+		allowDelete: true,
+		allowReorder: false,
+		addRowLabel: 'Add a change'|t('delivery-slots'),
+		errors: schedule.getErrors('overrides'),
+	}) }}
+
 	<hr>
 
 	{% if zonesAvailable %}

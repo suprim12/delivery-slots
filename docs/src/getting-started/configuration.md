@@ -22,7 +22,7 @@ return [
 
 | Option | Default | Description |
 |---|---|---|
-| `holdMinutes` | `15` | How long a slot is [held](/guides/holds) while the customer checks out. Raise it for slow payment gateways |
+| `holdMinutes` | `15` | How long a slot is [held](/guides/holds) while the customer checks out. Raise it for slow payment gateways, or set it to `0` so only paid orders take places |
 | `fewLeft` | `2` | When `slot.isLow` is true, for “2 left” notes |
 | `noteField` | `null` | The handle of an order field shown as a **Note** column on the [run sheet](/guides/run-sheet) and in the CSV |
 

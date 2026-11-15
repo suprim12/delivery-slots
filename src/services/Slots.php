@@ -84,7 +84,7 @@ class Slots extends Component
                 $day->unavailableReason = $closed;
                 continue;
             }
-            $windows = $schedule->windowsOn($weekday);
+            $windows = $schedule->windowsFor($ymd);
             if (!$windows) {
                 $day->unavailableReason = Craft::t('delivery-slots', 'Closed');
                 continue;
@@ -143,12 +143,13 @@ class Slots extends Component
      */
     public function choose(Order $order, string $value): ?string
     {
-        if (!$order->id) {
-            return Craft::t('delivery-slots', 'Add something to your cart first.');
-        }
         if (trim($value) === '') {
             $this->release($order);
             return null;
+        }
+        // An empty cart can't hold a place, so nobody can fill slots without shopping.
+        if (!$order->id || !$order->getLineItems()) {
+            return Craft::t('delivery-slots', 'Add something to your cart first.');
         }
         $method = $this->method($order, null);
         if (!$method || !$this->hasSlots($order)) {
@@ -267,15 +268,79 @@ class Slots extends Component
     }
 
     /**
+     * Puts an order in a slot for staff, whether or not the slot is full or closed. Completed orders are booked
+     * straight away; carts are held as usual.
+     *
+     * @param string $date Y-m-d
+     * @param string $start H:i, the start of one of the schedule's windows
+     * @return string|null An error message, or null when the slot is set.
+     */
+    public function assign(Order $order, string $date, string $start): ?string
+    {
+        $method = $order->getShippingMethod();
+        $schedule = $method instanceof ShippingMethod && $method->id ? Plugin::getInstance()->schedules->getByShippingMethodId($method->id) : null;
+        if (!$order->id || !$schedule) {
+            return Craft::t('delivery-slots', 'The order’s shipping method has no delivery times.');
+        }
+        $window = null;
+        foreach ($schedule->windows as $w) {
+            if ($w['start'] === $start) {
+                $window = $w;
+                break;
+            }
+        }
+        if (!$window || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
+            return Craft::t('delivery-slots', 'Choose a date and a time window.');
+        }
+
+        $zone = Plugin::getInstance()->zones->match($schedule, $order);
+        $record = BookingRecord::findOne(['orderId' => $order->id]) ?? new BookingRecord(['orderId' => $order->id]);
+        $record->shippingMethodId = $method->id;
+        $record->date = $date;
+        $record->start = $window['start'];
+        $record->end = $window['end'];
+        $record->zoneId = $zone['zoneId'] ?? null;
+        $record->fee = $zone['fee'] ?? 0;
+        $record->status = $order->isCompleted ? BookingRecord::STATUS_BOOKED : BookingRecord::STATUS_HELD;
+        $record->expiresAt = $order->isCompleted ? null : Db::prepareDateForDb($this->holdUntil());
+        $record->save(false);
+        $this->_bookings[$order->id] = DeliverySlot::fromRecord($record);
+
+        return null;
+    }
+
+    /**
+     * How many places are taken in each window on a date: booked orders and unexpired holds.
+     *
+     * @return array<string, int> Counts by window start (H:i).
+     */
+    public function getTakenOn(int $shippingMethodId, string $date, ?int $exceptOrderId = null): array
+    {
+        [$taken] = $this->taken($shippingMethodId, [new DateTimeImmutable($date)], $exceptOrderId, null);
+
+        return $taken[$date] ?? [];
+    }
+
+    /**
      * Bookings for a day, for the run sheet, earliest first.
      *
      * @return DeliverySlot[]
      */
     public function getBookedOn(string $date, ?int $shippingMethodId = null): array
     {
+        return $this->getBookedBetween($date, $date, $shippingMethodId);
+    }
+
+    /**
+     * Bookings between two dates (Y-m-d, both included), by date and time.
+     *
+     * @return DeliverySlot[]
+     */
+    public function getBookedBetween(string $from, string $to, ?int $shippingMethodId = null): array
+    {
         $query = BookingRecord::find()
-            ->where(['date' => $date, 'status' => BookingRecord::STATUS_BOOKED])
-            ->orderBy(['start' => SORT_ASC, 'id' => SORT_ASC]);
+            ->where(['and', ['>=', 'date', $from], ['<=', 'date', $to], ['status' => BookingRecord::STATUS_BOOKED]])
+            ->orderBy(['date' => SORT_ASC, 'start' => SORT_ASC, 'id' => SORT_ASC]);
         if ($shippingMethodId) {
             $query->andWhere(['shippingMethodId' => $shippingMethodId]);
         }
@@ -288,9 +353,12 @@ class Slots extends Component
         return $this->now ?? new DateTimeImmutable('now', new DateTimeZone(Craft::$app->getTimeZone()));
     }
 
+    /**
+     * When a hold ends. With `holdMinutes` set to 0, holds end straight away, so only paid orders take places.
+     */
     private function holdUntil(): DateTime
     {
-        $minutes = max(1, Plugin::getInstance()->getSettings()->holdMinutes);
+        $minutes = max(0, Plugin::getInstance()->getSettings()->holdMinutes);
 
         return new DateTime('@' . ($this->now()->getTimestamp() + $minutes * 60));
     }
