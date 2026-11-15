@@ -70,11 +70,20 @@ class SchedulesController extends Controller
                 'start' => $this->time($w['start']),
                 'end' => $this->time($w['end']),
                 'capacity' => $w['capacity'],
+                'fee' => ($w['fee'] ?? 0) ?: '',
             ] + $this->dayCells($w['days']), $schedule->windows),
             'closedRows' => array_map(fn($c) => [
                 'date' => new DateTime($c['date'], new DateTimeZone(Craft::$app->getTimeZone())),
+                'endDate' => ($c['endDate'] ?? null) ? new DateTime($c['endDate'], new DateTimeZone(Craft::$app->getTimeZone())) : null,
                 'label' => $c['label'],
+                'yearly' => $c['yearly'] ?? false,
             ], $schedule->closedDates),
+            'dayFeeRows' => [array_combine(array_map(fn($d) => "d$d", range(1, 7)), array_map(fn($d) => $schedule->dayFees[$d] ?? '', range(1, 7)))],
+            'noticeRows' => array_map(fn($n) => ['productTypeId' => $n['productTypeId'], 'leadHours' => $n['leadHours']], $schedule->productNotice),
+            'productTypeOptions' => array_map(
+                fn($type) => ['label' => $type->name, 'value' => $type->id],
+                Commerce::getInstance()->getProductTypes()->getAllProductTypes(),
+            ),
             'overrideRows' => array_map(fn($o) => [
                 'date' => new DateTime($o['date'], new DateTimeZone(Craft::$app->getTimeZone())),
                 'start' => $this->time($o['start']),
@@ -118,6 +127,10 @@ class SchedulesController extends Controller
             'cutoff' => $request->getBodyParam('cutoff'),
             'daysAhead' => $request->getBodyParam('daysAhead'),
             'closedDates' => $request->getBodyParam('closedDates') ?: [],
+            'dayFees' => $request->getBodyParam('dayFees') ?: [],
+            'sameDayFee' => $request->getBodyParam('sameDayFee'),
+            'nextDayFee' => $request->getBodyParam('nextDayFee'),
+            'productNotice' => $request->getBodyParam('productNotice') ?: [],
             'overrides' => $request->getBodyParam('overrides') ?: [],
             // Keep saved zones if Geo Maps has been removed, so they come back when it's reinstalled.
             'zones' => Plugin::getInstance()->zones->isAvailable() ? ($request->getBodyParam('zones') ?: []) : $schedule->zones,

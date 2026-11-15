@@ -21,6 +21,7 @@ Each row is a window, such as 8–10am, that runs on the ticked days.
 | **Start**, **End** | The window’s times, in the site’s time zone |
 | **Mon** … **Sun** | The days it runs |
 | **Orders per slot** | How many orders the window takes on each day. 10 means ten orders on Monday, ten on Tuesday, and so on |
+| **Slot fee** | Extra for this window, such as $5 for evening delivery. Leave it blank for none |
 
 To have shorter Saturdays, untick Saturday on the afternoon windows. For a window that takes more orders on one day, add a second row with the same times for that day.
 
@@ -34,10 +35,30 @@ Windows don’t have to be the same length. Pickup is often hourly, and delivery
 | **Same-day slots** | Let customers choose a slot later today. Off by default |
 | **Book at least** | How many hours before a slot starts it can still be chosen. With 2 hours, the 2–4pm slot closes at noon |
 | **Show slots up to** | How many days ahead the picker shows |
+| **More notice for some products** | Product types that need more notice, such as cakes at 48 hours while bread needs 2. When the cart has several, the longest notice applies |
+
+## Fees
+
+Added to the order’s shipping as a *Delivery time* adjustment when a slot is chosen, on top of any [zone](/guides/zones) fee. They all add up: an evening slot tomorrow with a $5 window fee and a $2 next-day fee costs $7.
+
+| Setting | Description |
+|---|---|
+| **Same-day fee** | Extra for a slot later today, such as $10 for express |
+| **Next-day fee** | Extra for a slot tomorrow |
+| **Fee by day** | Extra for slots on a weekday, such as $5 on Saturdays |
+
+The picker shows each slot’s total fee, such as “+$7.00”.
 
 ## Closed days
 
 Dates with no slots, such as public holidays or a stocktake. The label is shown to customers in place of the slots, such as “Christmas Day”. Without a label, the day shows as “Closed”.
+
+| Column | Description |
+|---|---|
+| **Date** | The day, or the first day of a range |
+| **Until** | The last day of a range, such as a two-week summer break. Leave it blank for one day |
+| **Label** | Shown to customers |
+| **Every year** | Close the same dates every year, such as Christmas Day, or 24 December until 2 January |
 
 Weekdays with no windows, such as Sunday above, are closed every week; you don’t need to add them.
 

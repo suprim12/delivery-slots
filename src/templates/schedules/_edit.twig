@@ -28,7 +28,7 @@
 
 	{{ forms.editableTableField({
 		label: 'Time windows'|t('delivery-slots'),
-		instructions: 'Each window runs on the ticked days. Orders per slot is how many orders each window takes on each day.'|t('delivery-slots'),
+		instructions: 'Each window runs on the ticked days. Orders per slot is how many orders each window takes on each day. Slot fee is extra for that window, such as for evenings.'|t('delivery-slots'),
 		id: 'windows',
 		name: 'windows',
 		cols: {
@@ -36,6 +36,7 @@
 			end: { type: 'time', heading: 'End'|t('delivery-slots') },
 		}|merge(dayColumns)|merge({
 			capacity: { type: 'number', heading: 'Orders per slot'|t('delivery-slots'), thin: true },
+			fee: { type: 'number', heading: 'Slot fee'|t('delivery-slots'), thin: true },
 		}),
 		rows: windowRows,
 		defaultValues: { d1: true, d2: true, d3: true, d4: true, d5: true, capacity: 10 },
@@ -86,16 +87,75 @@
 		unit: 'days ahead'|t('delivery-slots'),
 	}) }}
 
+	{{ forms.editableTableField({
+		label: 'More notice for some products'|t('delivery-slots'),
+		instructions: 'Products of these types need more notice, such as cakes baked to order. When the cart has several, the longest notice applies.'|t('delivery-slots'),
+		id: 'productNotice',
+		name: 'productNotice',
+		cols: {
+			productTypeId: { type: 'select', heading: 'Product type'|t('delivery-slots'), options: [{ label: '', value: '' }]|merge(productTypeOptions) },
+			leadHours: { type: 'number', heading: 'Book at least (hours)'|t('delivery-slots'), thin: true },
+		},
+		rows: noticeRows,
+		allowAdd: true,
+		allowDelete: true,
+		allowReorder: false,
+		addRowLabel: 'Add a product type'|t('delivery-slots'),
+	}) }}
+
+	<hr>
+
+	<h2>{{ 'Fees'|t('delivery-slots') }}</h2>
+	<p class="light">{{ 'Added to the order’s shipping when a slot is chosen, on top of any zone or slot fee.'|t('delivery-slots') }}</p>
+
+	{{ forms.textField({
+		label: 'Same-day fee'|t('delivery-slots'),
+		name: 'sameDayFee',
+		type: 'number',
+		min: 0,
+		step: 0.01,
+		size: 6,
+		value: schedule.sameDayFee ?: '',
+	}) }}
+
+	{{ forms.textField({
+		label: 'Next-day fee'|t('delivery-slots'),
+		name: 'nextDayFee',
+		type: 'number',
+		min: 0,
+		step: 0.01,
+		size: 6,
+		value: schedule.nextDayFee ?: '',
+	}) }}
+
+	{% set dayFeeColumns = {} %}
+	{% for d, name in weekdays %}
+		{% set dayFeeColumns = dayFeeColumns|merge({ ('d' ~ d): { type: 'number', heading: name, thin: true } }) %}
+	{% endfor %}
+	{{ forms.editableTableField({
+		label: 'Fee by day'|t('delivery-slots'),
+		instructions: 'Extra for slots on these days, such as weekends.'|t('delivery-slots'),
+		id: 'dayFees',
+		name: 'dayFees',
+		cols: dayFeeColumns,
+		rows: dayFeeRows,
+		allowAdd: false,
+		allowDelete: false,
+		allowReorder: false,
+	}) }}
+
 	<hr>
 
 	{{ forms.editableTableField({
 		label: 'Closed days'|t('delivery-slots'),
-		instructions: 'No slots on these dates, such as public holidays. The label is shown to customers.'|t('delivery-slots'),
+		instructions: 'No slots on these dates, such as public holidays or a summer break. Add an end date for a range, and tick Every year for holidays on the same date each year. The label is shown to customers.'|t('delivery-slots'),
 		id: 'closedDates',
 		name: 'closedDates',
 		cols: {
 			date: { type: 'date', heading: 'Date'|t('delivery-slots') },
+			endDate: { type: 'date', heading: 'Until'|t('delivery-slots') },
 			label: { type: 'singleline', heading: 'Label'|t('delivery-slots'), placeholder: 'Closed'|t('delivery-slots') },
+			yearly: { type: 'checkbox', heading: 'Every year'|t('delivery-slots'), thin: true },
 		},
 		rows: closedRows,
 		allowAdd: true,

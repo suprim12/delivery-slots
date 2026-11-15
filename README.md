@@ -8,8 +8,9 @@ Built for grocers, florists, bakeries, butchers, meal kits, liquor stores and an
 
 - **Time windows per shipping method.** Two-hour delivery windows, one-hour pickup windows, different times on different days.
 - **Orders per slot.** Full slots can’t be chosen. A slot is held for 15 minutes while the customer pays, so two people can’t take the last place.
-- **Ordering rules.** Next-day cut-off (“order by 8pm for tomorrow”), same-day slots, a minimum lead time and how many days ahead to show.
-- **Closed days.** Public holidays and stocktakes, with a label customers see.
+- **Ordering rules.** Next-day cut-off (“order by 8pm for tomorrow”), same-day slots, a minimum lead time and how many days ahead to show, with more notice for products such as cakes baked to order.
+- **Fees.** Extra for evening windows, Saturdays, same-day or next-day delivery, added to the order’s shipping.
+- **Closed days.** Public holidays, stocktakes and summer breaks, as single dates or ranges, every year if you like, with a label customers see.
 - **Delivery zones.** Use Commerce’s shipping zones, by country, state or postcode, or draw areas on a map with [Geo Maps](https://plugins.craftcms.com/geomaps), and give each zone its own delivery days, order limit and slot fee. Addresses outside every zone aren’t offered the shipping method.
 - **Run sheet.** Each day’s orders by slot, zone and suburb, with how full each slot is. Print a page per slot for drivers.
 - **Packing list.** How many of each item to pack for the day, by slot.
@@ -20,6 +21,7 @@ Built for grocers, florists, bakeries, butchers, meal kits, liquor stores and an
 - **Add to calendar.** `order.deliverySlot.calendarUrl` downloads the slot as a calendar event.
 - **On the order.** The slot shows on the order in the control panel, and as `order.deliverySlot` in templates and emails.
 - **Payment is checked.** Customers can’t pay without a slot, or with one that has filled up.
+- **Developer events.** Change the notice, the days, slots and fees, refuse a slot, or act on bookings.
 
 ## Requirements
 

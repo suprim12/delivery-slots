@@ -48,6 +48,7 @@ export default defineConfig({
           { text: 'Orders and Emails', link: '/guides/orders' },
           { text: 'JavaScript Checkouts', link: '/guides/javascript' },
           { text: 'Template Reference', link: '/guides/reference' },
+          { text: 'Developer Events', link: '/guides/events' },
         ],
       },
       {

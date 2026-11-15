@@ -12,6 +12,7 @@ namespace suprim\deliveryslots\services;
 use Craft;
 use craft\base\Component;
 use craft\commerce\elements\Order;
+use craft\commerce\elements\Variant;
 use craft\commerce\models\OrderNotice;
 use craft\commerce\models\ShippingMethod;
 use craft\db\Query;
@@ -21,6 +22,10 @@ use DateInterval;
 use DateTime;
 use DateTimeImmutable;
 use DateTimeZone;
+use suprim\deliveryslots\events\BookEvent;
+use suprim\deliveryslots\events\ChooseEvent;
+use suprim\deliveryslots\events\DaysEvent;
+use suprim\deliveryslots\events\LeadHoursEvent;
 use suprim\deliveryslots\models\Day;
 use suprim\deliveryslots\models\DeliverySlot;
 use suprim\deliveryslots\models\Schedule;
@@ -35,6 +40,26 @@ class Slots extends Component
 {
     /** The notice added when a held slot isn’t offered for the cart’s new address. */
     public const NOTICE_UNAVAILABLE = 'deliverySlotUnavailable';
+
+    /**
+     * @event LeadHoursEvent How much notice an order needs, after any longer notice for the product types in it.
+     */
+    public const EVENT_DEFINE_LEAD_HOURS = 'defineLeadHours';
+
+    /**
+     * @event DaysEvent The days and slots an order can choose from, with their limits and fees.
+     */
+    public const EVENT_DEFINE_DAYS = 'defineDays';
+
+    /**
+     * @event ChooseEvent Before a slot is held for an order. Set `isValid` to false to refuse it.
+     */
+    public const EVENT_BEFORE_CHOOSE = 'beforeChoose';
+
+    /**
+     * @event BookEvent After a completed order's slot is booked.
+     */
+    public const EVENT_AFTER_BOOK = 'afterBook';
 
     /** @var array<int, DeliverySlot|null> Bookings by order ID, for this request. */
     private array $_bookings = [];
@@ -68,7 +93,7 @@ class Slots extends Component
 
         $now = $this->now();
         $today = $now->setTime(0, 0);
-        $earliest = $now->add(new DateInterval('PT' . $schedule->leadHours . 'H'));
+        $earliest = $now->add(new DateInterval('PT' . $this->getLeadHours($order, $schedule) . 'H'));
         $cutoffPassed = $schedule->cutoff !== null && $now->format('H:i') >= $schedule->cutoff;
 
         $dates = [];
@@ -118,12 +143,18 @@ class Slots extends Component
                     'end' => $window['end'],
                     'capacity' => $window['capacity'],
                     'left' => max(0, $left),
-                    'fee' => $zone['fee'] ?? 0.0,
+                    'fee' => ($zone['fee'] ?? 0.0) + $schedule->feeFor($window, $start, $today),
                 ]);
             }
             if (!$day->slots) {
                 $day->unavailableReason = Craft::t('delivery-slots', 'Ordering has closed');
             }
+        }
+
+        if ($this->hasEventHandlers(self::EVENT_DEFINE_DAYS)) {
+            $event = new DaysEvent(['order' => $order, 'method' => $method, 'schedule' => $schedule, 'zone' => $zone, 'days' => $days]);
+            $this->trigger(self::EVENT_DEFINE_DAYS, $event);
+            $days = $event->days;
         }
 
         return $days;
@@ -214,6 +245,13 @@ class Slots extends Component
             if (!$slot || $slot->getIsFull()) {
                 return Craft::t('delivery-slots', 'That delivery time is no longer available. Choose another.');
             }
+            if ($this->hasEventHandlers(self::EVENT_BEFORE_CHOOSE)) {
+                $event = new ChooseEvent(['order' => $order, 'slot' => $slot]);
+                $this->trigger(self::EVENT_BEFORE_CHOOSE, $event);
+                if (!$event->isValid) {
+                    return $event->error ?? Craft::t('delivery-slots', 'That delivery time isn’t available. Choose another.');
+                }
+            }
 
             $zone = Plugin::getInstance()->zones->match(Plugin::getInstance()->schedules->getEnabled($method->id), $order);
             $record = BookingRecord::findOne(['orderId' => $order->id]) ?? new BookingRecord(['orderId' => $order->id]);
@@ -286,11 +324,37 @@ class Slots extends Component
         $record->expiresAt = null;
         $record->save(false);
         $this->_bookings[$order->id] = DeliverySlot::fromRecord($record);
+
+        if ($this->hasEventHandlers(self::EVENT_AFTER_BOOK)) {
+            $this->trigger(self::EVENT_AFTER_BOOK, new BookEvent(['order' => $order, 'booking' => $this->_bookings[$order->id]]));
+        }
     }
 
     /**
-     * Removes the order's slot.
+     * How much notice the order needs, in hours: the schedule's, or longer for product types that need it.
      */
+    public function getLeadHours(Order $order, Schedule $schedule): int
+    {
+        $hours = $schedule->leadHours;
+        if ($schedule->productNotice) {
+            $byType = array_column($schedule->productNotice, 'leadHours', 'productTypeId');
+            foreach ($order->getLineItems() as $item) {
+                $purchasable = $item->getPurchasable();
+                $typeId = $purchasable instanceof Variant ? $purchasable->getProduct()?->typeId : null;
+                if ($typeId !== null && isset($byType[$typeId])) {
+                    $hours = max($hours, $byType[$typeId]);
+                }
+            }
+        }
+        if ($this->hasEventHandlers(self::EVENT_DEFINE_LEAD_HOURS)) {
+            $event = new LeadHoursEvent(['order' => $order, 'schedule' => $schedule, 'leadHours' => $hours]);
+            $this->trigger(self::EVENT_DEFINE_LEAD_HOURS, $event);
+            $hours = max(0, $event->leadHours);
+        }
+
+        return $hours;
+    }
+
     /**
      * Checks a held slot after the cart changes, such as a new address. A slot the method no longer offers there is let
      * go, with a notice for the customer; one it still offers takes on the new address's zone and fee.
@@ -319,6 +383,9 @@ class Slots extends Component
         }
     }
 
+    /**
+     * Removes the order's slot.
+     */
     public function release(Order $order): void
     {
         if ($order->id) {

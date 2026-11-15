@@ -14,6 +14,7 @@ use craft\base\Model;
 use craft\helpers\DateTimeHelper;
 use craft\helpers\Json;
 use DateTime;
+use DateTimeImmutable;
 use suprim\deliveryslots\records\ScheduleRecord;
 
 /**
@@ -26,9 +27,9 @@ class Schedule extends Model
     public bool $enabled = true;
 
     /**
-     * Time windows, each with the weekdays it runs on (ISO, 1 = Monday) and how many orders it takes.
+     * Time windows, each with the weekdays it runs on (ISO, 1 = Monday), how many orders it takes and an extra fee.
      *
-     * @var array<int, array{start: string, end: string, days: int[], capacity: int}>
+     * @var array<int, array{start: string, end: string, days: int[], capacity: int, fee?: float}>
      */
     public array $windows = [];
 
@@ -44,8 +45,28 @@ class Schedule extends Model
     /** How many days ahead slots are shown. */
     public int $daysAhead = 7;
 
-    /** @var array<int, array{date: string, label: string}> Dates with no slots (Y-m-d). */
+    /**
+     * Dates with no slots (Y-m-d): one date, or a range up to `endDate`, and every year when `yearly`.
+     *
+     * @var array<int, array{date: string, endDate?: string|null, label: string, yearly?: bool}>
+     */
     public array $closedDates = [];
+
+    /** @var array<int, float> Extra fee by ISO weekday (1 = Monday), such as for Saturdays. */
+    public array $dayFees = [];
+
+    /** Extra fee for a slot later today. */
+    public float $sameDayFee = 0.0;
+
+    /** Extra fee for a slot tomorrow. */
+    public float $nextDayFee = 0.0;
+
+    /**
+     * Longer notice for some product types, such as cakes baked to order. The longest notice in the cart applies.
+     *
+     * @var array<int, array{productTypeId: int, leadHours: int}>
+     */
+    public array $productNotice = [];
 
     /**
      * One-off changes to a slot on a date: a different limit, or 0 to close it.
@@ -94,6 +115,10 @@ class Schedule extends Model
             'cutoff' => $this->cutoff,
             'daysAhead' => $this->daysAhead,
             'closedDates' => array_values($this->closedDates),
+            'dayFees' => $this->dayFees,
+            'sameDayFee' => $this->sameDayFee,
+            'nextDayFee' => $this->nextDayFee,
+            'productNotice' => array_values($this->productNotice),
             'overrides' => array_values($this->overrides),
             'zones' => array_values($this->zones),
             'shippingZones' => array_values($this->shippingZones),
@@ -124,6 +149,7 @@ class Schedule extends Model
                 'end' => (string)$end,
                 'days' => self::days($row),
                 'capacity' => (int)($row['capacity'] ?? 0),
+                'fee' => self::fee($row['fee'] ?? 0),
             ];
         }
         usort($windows, fn($a, $b) => strcmp($a['start'], $b['start']));
@@ -133,11 +159,42 @@ class Schedule extends Model
         foreach ((array)($settings['closedDates'] ?? []) as $row) {
             $date = self::date($row['date'] ?? null);
             if ($date !== null) {
-                $closed[$date] = ['date' => $date, 'label' => trim((string)($row['label'] ?? ''))];
+                $end = self::date($row['endDate'] ?? null);
+                $closed[$date] = [
+                    'date' => $date,
+                    'endDate' => $end !== null && $end > $date ? $end : null,
+                    'label' => trim((string)($row['label'] ?? '')),
+                    'yearly' => (bool)($row['yearly'] ?? false),
+                ];
             }
         }
         ksort($closed);
         $this->closedDates = array_values($closed);
+
+        // Saved as {1: 5.0}, or posted as one table row of d1 … d7.
+        $dayFees = (array)($settings['dayFees'] ?? []);
+        if (isset($dayFees[0]) && is_array($dayFees[0])) {
+            $dayFees = $dayFees[0];
+        }
+        $this->dayFees = [];
+        foreach (range(1, 7) as $d) {
+            $fee = self::fee($dayFees[$d] ?? $dayFees["d$d"] ?? 0);
+            if ($fee > 0) {
+                $this->dayFees[$d] = $fee;
+            }
+        }
+        $this->sameDayFee = self::fee($settings['sameDayFee'] ?? 0);
+        $this->nextDayFee = self::fee($settings['nextDayFee'] ?? 0);
+
+        $notice = [];
+        foreach ((array)($settings['productNotice'] ?? []) as $row) {
+            $typeId = (int)(is_array($row['productTypeId'] ?? null) ? reset($row['productTypeId']) : ($row['productTypeId'] ?? 0));
+            $hours = $row['leadHours'] ?? '';
+            if ($typeId && is_numeric($hours)) {
+                $notice[$typeId] = ['productTypeId' => $typeId, 'leadHours' => max(0, (int)$hours)];
+            }
+        }
+        $this->productNotice = array_values($notice);
 
         $overrides = [];
         foreach ((array)($settings['overrides'] ?? []) as $row) {
@@ -168,7 +225,7 @@ class Schedule extends Model
                 'zoneId' => $zoneId,
                 'days' => self::days($row),
                 'capacity' => $capacity === null || $capacity === '' ? null : max(0, (int)$capacity),
-                'fee' => max(0, (float)($row['fee'] ?? 0)),
+                'fee' => self::fee($row['fee'] ?? 0),
             ];
         }
         $this->zones = $zones;
@@ -184,7 +241,7 @@ class Schedule extends Model
                 'shippingZoneId' => $id,
                 'days' => self::days($row),
                 'capacity' => $capacity === null || $capacity === '' ? null : max(0, (int)$capacity),
-                'fee' => max(0, (float)($row['fee'] ?? 0)),
+                'fee' => self::fee($row['fee'] ?? 0),
             ];
         }
         $this->shippingZones = $shippingZones;
@@ -237,10 +294,37 @@ class Schedule extends Model
         return null;
     }
 
+    /**
+     * The extra fee for a slot on a date, besides any zone fee: the window's, the weekday's, and same-day or next-day.
+     *
+     * @param array{fee?: float} $window
+     */
+    public function feeFor(array $window, DateTimeImmutable $date, DateTimeImmutable $today): float
+    {
+        $fee = (float)($window['fee'] ?? 0) + ($this->dayFees[(int)$date->format('N')] ?? 0.0);
+        $days = (int)$today->diff($date->setTime(0, 0))->format('%r%a');
+        if ($days === 0) {
+            $fee += $this->sameDayFee;
+        } elseif ($days === 1) {
+            $fee += $this->nextDayFee;
+        }
+
+        return $fee;
+    }
+
     public function closedLabel(string $date): ?string
     {
         foreach ($this->closedDates as $closed) {
-            if ($closed['date'] === $date) {
+            $from = $closed['date'];
+            $to = ($closed['endDate'] ?? null) ?: $from;
+            if ($closed['yearly'] ?? false) {
+                // Compare month and day only. A range such as 24 December to 2 January runs over the new year.
+                [$day, $from, $to] = [substr($date, 5), substr($from, 5), substr($to, 5)];
+                $in = $from <= $to ? ($day >= $from && $day <= $to) : ($day >= $from || $day <= $to);
+            } else {
+                $in = $date >= $from && $date <= $to;
+            }
+            if ($in) {
                 return $closed['label'] !== '' ? $closed['label'] : Craft::t('delivery-slots', 'Closed');
             }
         }
@@ -327,6 +411,11 @@ class Schedule extends Model
     /**
      * A date as Y-m-d, from `2026-12-25`, a date field's posted array, or a DateTime.
      */
+    private static function fee(mixed $value): float
+    {
+        return is_numeric($value) ? max(0.0, round((float)$value, 2)) : 0.0;
+    }
+
     private static function date(mixed $value): ?string
     {
         if ($value === null || $value === '' || (is_array($value) && trim((string)($value['date'] ?? '')) === '')) {
