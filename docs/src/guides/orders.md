@@ -4,7 +4,7 @@
 
 An order’s delivery time and zone show in the order’s details, under **Delivery time** and **Zone**.
 
-![An order in the control panel, with Delivery time: Tuesday 17 November, 8 – 10am and Zone: Inner east at the bottom of its details](/images/order.jpg)
+![An order’s details in the control panel: Delivery time: Tuesday 17 November, 8 – 10am, with a Change link, and Zone: Inner east](/images/order.jpg)
 
 While a customer is still checking out, it shows as **Delivery time (held)**.
 

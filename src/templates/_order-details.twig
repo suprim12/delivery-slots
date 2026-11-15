@@ -1,9 +1,9 @@
 <div class="meta read-only" style="margin-top: var(--m, 14px);">
 	<div class="data">
 		<h5 class="heading">{{ slot and not slot.isBooked ? 'Delivery time (held)'|t('delivery-slots') : 'Delivery time'|t('delivery-slots') }}</h5>
-		<div class="value">
-			{{ slot ? slot.label : '—' }}
-			{% if canEdit %}<br><a href="{{ url('delivery-slots/orders/' ~ order.id) }}">{{ slot ? 'Change'|t('delivery-slots') : 'Choose a time'|t('delivery-slots') }}</a>{% endif %}
+		<div class="value" style="display: block;">
+			<div>{{ slot ? slot.label : '—' }}</div>
+			{% if canEdit %}<div style="margin-top: 4px;"><a href="{{ url('delivery-slots/orders/' ~ order.id) }}">{{ slot ? 'Change'|t('delivery-slots') : 'Choose a time'|t('delivery-slots') }}</a></div>{% endif %}
 		</div>
 	</div>
 	{% set zone = slot ? slot.zone : null %}

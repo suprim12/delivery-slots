@@ -28,9 +28,29 @@
   background: var(--ds-mat);
 }
 
+/* ---------- Home (DsHome.vue) ---------- */
+
+/* Entrances: parts rise in once as they reach the screen; only when the script runs. */
+@media (prefers-reduced-motion: no-preference) {
+  .ds-motion .dh [data-reveal] {
+    opacity: 0;
+    transform: translateY(28px);
+    transition: opacity 0.7s cubic-bezier(0.2, 0.7, 0.2, 1), transform 0.7s cubic-bezier(0.2, 0.7, 0.2, 1);
+  }
+
+  .ds-motion .dh [data-reveal].is-in {
+    opacity: 1;
+    transform: none;
+  }
+
+  .dh-cells > :nth-child(3n + 2) { transition-delay: 0.08s; }
+  .dh-cells > :nth-child(3n) { transition-delay: 0.16s; }
+}
+
 /* The home page runs edge to edge under the nav. */
 @media (min-width: 960px) {
   .VPContent:has(.dh) { padding-top: var(--vp-nav-height); }
 }
 .Layout:has(.dh) .VPNavBar .divider-line { display: none; }
 .Layout:has(.dh) .VPNav .divider { display: none; }
+.Layout:has(.dh) .VPNav { font-family: 'Clash Grotesk', var(--vp-font-family-base); }

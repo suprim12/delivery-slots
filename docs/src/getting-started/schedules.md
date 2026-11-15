@@ -6,7 +6,7 @@ Each shipping method has its own schedule. Go to **Delivery Slots → Schedules*
 
 Click a shipping method to edit its schedule. Shipping methods themselves are created in **Commerce → Store Management → Shipping Methods**.
 
-![The schedule for Local delivery: six time windows, an 8pm cut-off, closed days for Christmas and New Year, and three zones](/images/schedule.jpg)
+![The schedule for Local delivery: six time windows, an 8pm cut-off, closed days for Christmas and New Year, two changes on a date, and three zones](/images/schedule.jpg)
 
 ## Offer delivery times
 
