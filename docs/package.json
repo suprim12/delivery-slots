@@ -1,0 +1,14 @@
+{
+  "name": "delivery-slots-docs",
+  "version": "1.0.0",
+  "description": "Delivery Slots for Craft Commerce documentation",
+  "private": true,
+  "scripts": {
+    "docs:dev": "vitepress dev src",
+    "docs:build": "vitepress build src",
+    "docs:preview": "vitepress preview src"
+  },
+  "devDependencies": {
+    "vitepress": "^1.6.3"
+  }
+}

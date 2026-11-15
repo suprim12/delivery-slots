@@ -14,6 +14,7 @@ use craft\base\Component;
 use craft\commerce\elements\Order;
 use craft\commerce\models\ShippingMethod;
 use craft\db\Query;
+use craft\db\Table;
 use craft\helpers\Db;
 use DateInterval;
 use DateTime;
@@ -336,20 +337,23 @@ class Slots extends Component
      */
     private function taken(int $methodId, array $dates, ?int $orderId, ?int $zoneId): array
     {
+        // Orders in the trash don't take a place.
         $rows = (new Query())
-            ->select(['date', 'start', 'zoneId', 'count' => 'COUNT(*)'])
-            ->from(BookingRecord::TABLE_NAME)
+            ->select(['b.date', 'b.start', 'b.zoneId', 'count' => 'COUNT(*)'])
+            ->from(['b' => BookingRecord::TABLE_NAME])
+            ->innerJoin(['e' => Table::ELEMENTS], '[[e.id]] = [[b.orderId]]')
             ->where([
-                'shippingMethodId' => $methodId,
-                'date' => array_map(fn($d) => $d->format('Y-m-d'), $dates),
+                'b.shippingMethodId' => $methodId,
+                'b.date' => array_map(fn($d) => $d->format('Y-m-d'), $dates),
+                'e.dateDeleted' => null,
             ])
             ->andWhere(['or',
-                ['status' => BookingRecord::STATUS_BOOKED],
-                ['>', 'expiresAt', Db::prepareDateForDb(new DateTime('@' . $this->now()->getTimestamp()))],
+                ['b.status' => BookingRecord::STATUS_BOOKED],
+                ['>', 'b.expiresAt', Db::prepareDateForDb(new DateTime('@' . $this->now()->getTimestamp()))],
             ])
-            ->groupBy(['date', 'start', 'zoneId']);
+            ->groupBy(['b.date', 'b.start', 'b.zoneId']);
         if ($orderId) {
-            $rows->andWhere(['not', ['orderId' => $orderId]]);
+            $rows->andWhere(['not', ['b.orderId' => $orderId]]);
         }
         $rows = $rows->all();
 

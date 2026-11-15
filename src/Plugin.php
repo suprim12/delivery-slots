@@ -171,7 +171,8 @@ class Plugin extends BasePlugin
 
         // Paying needs a slot when the shipping method has them.
         Event::on(PaymentsController::class, Controller::EVENT_BEFORE_ACTION, function(ActionEvent $event) {
-            $this->_paying = $event->action->id === 'pay';
+            // Only customers paying on the site; staff can take payment in the control panel without a slot.
+            $this->_paying = $event->action->id === 'pay' && Craft::$app->getRequest()->getIsSiteRequest();
         });
 
         Event::on(Order::class, Model::EVENT_BEFORE_VALIDATE, function(ValidateEvent $event) {

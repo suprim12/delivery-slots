@@ -1,0 +1,36 @@
+/* Brand: the deep green of the plugin icon. Links and buttons use steps of it that stay readable. */
+:root {
+  --ds-brand: #1f5f3f;
+  --vp-c-brand-1: #1f6b45;
+  --vp-c-brand-2: #185637;
+  --vp-c-brand-3: #1f6b45;
+  --vp-c-brand-soft: rgba(31, 107, 69, 0.12);
+  --vp-button-brand-bg: #1f6b45;
+  --vp-button-brand-hover-bg: #185637;
+  --vp-button-brand-active-bg: #12442b;
+  --ds-mat: #eef1ee;
+}
+
+.dark {
+  --vp-c-brand-1: #7fcfa2;
+  --vp-c-brand-2: #6abf90;
+  --vp-c-brand-3: #1f6b45;
+  --vp-c-brand-soft: rgba(127, 207, 162, 0.14);
+  --ds-mat: #1f2421;
+}
+
+/* Screenshots sit on a soft mat so they read as pictures of a page. */
+.vp-doc img {
+  display: block;
+  margin: 24px 0;
+  padding: 10px;
+  border-radius: 10px;
+  background: var(--ds-mat);
+}
+
+/* The home page runs edge to edge under the nav. */
+@media (min-width: 960px) {
+  .VPContent:has(.dh) { padding-top: var(--vp-nav-height); }
+}
+.Layout:has(.dh) .VPNavBar .divider-line { display: none; }
+.Layout:has(.dh) .VPNav .divider { display: none; }
