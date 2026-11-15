@@ -14,6 +14,8 @@ It shows:
 
 - the days, as buttons, and the chosen day’s times as radio buttons, with *Full*, *2 left* and slot fees;
 - the error when a slot can’t be held, such as when it has just filled up;
+- *Choose a delivery time* when the form is sent without one, so customers can’t go on to payment without a time;
+- a notice when a new address means the chosen time isn’t offered there any more;
 - *Enter your address to see delivery times* when the method has [zones](/guides/zones) and the customer hasn’t entered an address yet;
 - *There are no delivery times for this address* when no zone covers it;
 - nothing when the cart’s shipping method has no slots.
@@ -24,6 +26,7 @@ Options:
 {{ craft.deliverySlots.picker(cart, {
   heading: 'When should we deliver?',  {# or false for none #}
   styles: false,                       {# leave the styling to you #}
+  required: false,                     {# let the form save without a time #}
 }) }}
 ```
 
@@ -34,6 +37,8 @@ Its classes start with `ds-`, and its colours can be changed with CSS variables:
 ```
 
 Pass `cart` when your template has one from a failed form, as below, so the error shows.
+
+A time is only asked for when the form saves without changing the shipping method or the address, so a one-page checkout can still save its address first. Changing the shipping method lets go of the time held for the old one.
 
 ## Your own markup
 
@@ -62,8 +67,13 @@ Put it in the form where customers choose a shipping method, which posts to `com
   {% if cart.deliverySlotsNeedAddress %}
     <p>Enter your address to see delivery times.</p>
   {% elseif cart.hasDeliverySlots %}
-    {% if cart.getFirstError('deliverySlot') %}
-      <p class="error">{{ cart.getFirstError('deliverySlot') }}</p>
+    {# Ask for a time before the customer goes on to pay. #}
+    <input type="hidden" name="deliverySlotRequired" value="1">
+
+    {% set error = cart.getFirstError('deliverySlot')
+      ?: (cart.getFirstNotice('deliverySlotUnavailable').message ?? null) %}
+    {% if error %}
+      <p class="error">{{ error }}</p>
     {% endif %}
 
     {% set chosen = cart.deliverySlot.value ?? null %}

@@ -75,4 +75,28 @@ class CheckoutTest extends TestCase
         $this->later('+30 minutes');
         $this->assertNotNull($slots->choose($this->cart(), '2026-11-17@10:00'));
     }
+
+    public function testTheDeliveryStepAsksForASlot(): void
+    {
+        $this->schedule();
+        $cart = $this->cart();
+
+        $this->assertFalse($this->saveForm($cart, null, true));
+        $this->assertSame('Choose a delivery time.', $cart->getFirstError('deliverySlot'));
+        $cart->clearErrors();
+        $this->assertTrue($this->saveForm($cart, '2026-11-17@10:00', true));
+        $this->assertTrue($this->saveForm($cart, null, true), 'A slot chosen before is enough.');
+    }
+
+    public function testSwitchingMethodIgnoresTheOldMethodsTime(): void
+    {
+        $this->schedule();
+        $cart = $this->cart();
+        $this->assertTrue($this->saveForm($cart, '2026-11-17@10:00'));
+
+        // The form still has the delivery time ticked when the customer picks the other method.
+        $cart->shippingMethodHandle = $this->otherMethod->handle;
+        $this->assertTrue($this->saveForm($cart, '2026-11-17@10:00', true), json_encode($cart->getErrors()));
+        $this->assertNull(BookingRecord::findOne(['orderId' => $cart->id]), 'The old method’s place is let go.');
+    }
 }

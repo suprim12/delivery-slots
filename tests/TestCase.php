@@ -148,6 +148,27 @@ abstract class TestCase extends BaseTestCase
     }
 
     /**
+     * Saves the cart as the cart form does, with what the form posted.
+     */
+    protected function saveForm(\craft\commerce\elements\Order $cart, ?string $slot = null, bool $required = false): bool
+    {
+        (function() use ($slot, $required) {
+            $this->_cartForm = true;
+            $this->_postedSlot = $slot;
+            $this->_slotRequired = $required;
+        })->call($this->plugin());
+        try {
+            return Craft::$app->getElements()->saveElement($cart, false);
+        } finally {
+            (function() {
+                $this->_cartForm = false;
+                $this->_postedSlot = null;
+                $this->_slotRequired = false;
+            })->call($this->plugin());
+        }
+    }
+
+    /**
      * Moves the fixed time on, such as past a hold.
      */
     protected function later(string $interval): void

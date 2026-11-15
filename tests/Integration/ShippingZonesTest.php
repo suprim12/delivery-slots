@@ -6,6 +6,7 @@ use craft\commerce\elements\conditions\addresses\PostalCodeFormulaConditionRule;
 use craft\commerce\elements\conditions\addresses\ZoneAddressCondition;
 use craft\commerce\models\ShippingAddressZone;
 use craft\commerce\Plugin as Commerce;
+use craft\elements\Address;
 use suprim\deliveryslots\adjusters\SlotFee;
 use suprim\deliveryslots\models\Schedule;
 use suprim\deliveryslots\tests\TestCase;
@@ -157,5 +158,37 @@ class ShippingZonesTest extends TestCase
 
         $this->assertSame([], $this->plugin()->slots->getDays($this->cart(true, $this->address('5067')), $this->method));
         $this->assertNotSame([], $this->plugin()->slots->getDays($this->cart(true, $this->address('5245')), $this->method));
+    }
+
+    public function testANewAddressLetsGoOfATimeItsZoneDoesntOffer(): void
+    {
+        $this->zonedSchedule();
+        $cart = $this->cart(true, $this->address('5067'));
+        $this->assertTrue($this->saveForm($cart, '2026-11-17@08:00'));
+
+        // Tuesday: the Hills only get Thursdays and Saturdays.
+        $cart->setShippingAddress(new Address($this->address('5245') + ['ownerId' => $cart->id]));
+        $this->assertTrue($this->saveForm($cart));
+
+        $this->assertNull($this->plugin()->slots->getBooking($cart));
+        $this->assertStringContainsString('isn’t available for this address', (string)$cart->getFirstNotice('deliverySlotUnavailable')?->message);
+
+        $this->assertTrue($this->saveForm($cart, '2026-11-19@08:00'));
+        $this->assertNull($cart->getFirstNotice('deliverySlotUnavailable'), 'Choosing again clears the notice.');
+    }
+
+    public function testANewAddressTakesItsZonesFee(): void
+    {
+        [, $hills] = $this->zonedSchedule();
+        $cart = $this->cart(true, $this->address('5067'));
+        $this->assertTrue($this->saveForm($cart, '2026-11-19@08:00'));
+        $this->assertEquals(0.0, $this->plugin()->slots->getBooking($cart)->fee);
+
+        $cart->setShippingAddress(new Address($this->address('5245') + ['ownerId' => $cart->id]));
+        $this->assertTrue($this->saveForm($cart));
+
+        $booking = $this->plugin()->slots->getBooking($cart);
+        $this->assertSame('shippingZone:' . $hills->id, $booking->zoneKey);
+        $this->assertEquals(4.0, $booking->fee);
     }
 }

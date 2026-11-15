@@ -25,9 +25,10 @@ class DeliverySlotsVariable
      * days and times for the cart’s shipping method, asks for an address when the times depend on it, and says so when
      * there are no times for the address. It renders nothing when the method has no slots.
      *
-     * Options: `heading` (text, or false for none), `styles` (false to leave the styling to you).
+     * Options: `heading` (text, or false for none), `styles` (false to leave the styling to you), `required` (false to
+     * let the form save without a time; by default it asks for one, unless the same form changes the method or address).
      *
-     * @param array{heading?: string|false, styles?: bool} $options
+     * @param array{heading?: string|false, styles?: bool, required?: bool} $options
      */
     public function picker(?Order $cart = null, array $options = []): Markup
     {
@@ -36,6 +37,7 @@ class DeliverySlotsVariable
             'cart' => $cart,
             'heading' => $options['heading'] ?? Craft::t('delivery-slots', 'Choose a delivery time'),
             'styles' => $options['styles'] ?? true,
+            'required' => $options['required'] ?? true,
         ], View::TEMPLATE_MODE_CP);
 
         return new Markup($html, Craft::$app->charset);

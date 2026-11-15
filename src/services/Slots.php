@@ -12,6 +12,7 @@ namespace suprim\deliveryslots\services;
 use Craft;
 use craft\base\Component;
 use craft\commerce\elements\Order;
+use craft\commerce\models\OrderNotice;
 use craft\commerce\models\ShippingMethod;
 use craft\db\Query;
 use craft\db\Table;
@@ -32,6 +33,9 @@ use suprim\deliveryslots\records\BookingRecord;
  */
 class Slots extends Component
 {
+    /** The notice added when a held slot isn’t offered for the cart’s new address. */
+    public const NOTICE_UNAVAILABLE = 'deliverySlotUnavailable';
+
     /** @var array<int, DeliverySlot|null> Bookings by order ID, for this request. */
     private array $_bookings = [];
 
@@ -198,6 +202,7 @@ class Slots extends Component
             $record->expiresAt = Db::prepareDateForDb($this->holdUntil($holdMinutes));
             $record->save(false);
             $this->_bookings[$order->id] = DeliverySlot::fromRecord($record);
+            $order->clearNotices(self::NOTICE_UNAVAILABLE);
         } finally {
             $mutex->release($lock);
         }
@@ -259,12 +264,41 @@ class Slots extends Component
     /**
      * Removes the order's slot.
      */
+    /**
+     * Checks a held slot after the cart changes, such as a new address. A slot the method no longer offers there is let
+     * go, with a notice for the customer; one it still offers takes on the new address's zone and fee.
+     */
+    public function recheck(Order $order): void
+    {
+        $booking = $this->getBooking($order);
+        if (!$booking || $booking->getIsBooked()) {
+            return;
+        }
+        $slot = $this->find($order, $booking->date, $booking->start);
+        if ($slot === null) {
+            $this->release($order);
+            $order->addNotice(new OrderNotice([
+                'type' => self::NOTICE_UNAVAILABLE,
+                'attribute' => 'deliverySlot',
+                'message' => Craft::t('delivery-slots', 'Your delivery time, {slot}, isn’t available for this address. Choose another.', ['slot' => $booking->getLabel()]),
+            ]));
+            return;
+        }
+        $schedule = Plugin::getInstance()->schedules->getEnabled((int)$booking->shippingMethodId);
+        $zone = $schedule ? Plugin::getInstance()->zones->match($schedule, $order) : null;
+        if (($zone['key'] ?? null) !== $booking->zoneKey || $slot->fee != $booking->fee) {
+            // Held again for the new zone; if it has just filled, payment asks for another time.
+            $this->choose($order, $booking->getValue());
+        }
+    }
+
     public function release(Order $order): void
     {
         if ($order->id) {
             BookingRecord::deleteAll(['orderId' => $order->id]);
             $this->_bookings[$order->id] = null;
         }
+        $order->clearNotices(self::NOTICE_UNAVAILABLE);
     }
 
     /**

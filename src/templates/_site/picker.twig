@@ -3,7 +3,8 @@
 {% set id = 'ds-' ~ random() %}
 <div class="ds-picker" id="{{ id }}">
 	{% if heading %}<h2 class="ds-heading">{{ heading }}</h2>{% endif %}
-	{% if cart.getFirstError('deliverySlot') %}<p class="ds-error" role="alert">{{ cart.getFirstError('deliverySlot') }}</p>{% endif %}
+	{% set error = cart.getFirstError('deliverySlot') ?: (cart.getFirstNotice('deliverySlotUnavailable').message ?? null) %}
+	{% if error %}<p class="ds-error" role="alert">{{ error }}</p>{% endif %}
 
 	{% if cart.deliverySlotsNeedAddress %}
 		<p class="ds-note">{{ 'Enter your address to see delivery times.'|t('delivery-slots') }}</p>
@@ -15,6 +16,7 @@
 		{% if not openDay %}
 			<p class="ds-note">{{ 'There are no delivery times for this address. Choose another way to get your order, or another address.'|t('delivery-slots') }}</p>
 		{% else %}
+			{% if required %}<input type="hidden" name="deliverySlotRequired" value="1">{% endif %}
 			<div class="ds-days">
 				{% for day in days %}
 					<button type="button" class="ds-day" data-day="{{ loop.index }}" aria-pressed="{{ day == openDay ? 'true' : 'false' }}" {{ not day.isAvailable ? 'disabled' }}>

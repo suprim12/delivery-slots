@@ -18,6 +18,7 @@ use craft\commerce\adjusters\Tax;
 use craft\commerce\controllers\BaseFrontEndController;
 use craft\commerce\controllers\CartController;
 use craft\commerce\controllers\PaymentsController;
+use craft\commerce\db\Table as CommerceTable;
 use craft\commerce\elements\conditions\orders\OrderCondition;
 use craft\commerce\elements\Order;
 use craft\commerce\events\ModifyCartInfoEvent;
@@ -25,6 +26,7 @@ use craft\commerce\events\RegisterAvailableShippingMethodsEvent;
 use craft\commerce\models\ShippingMethod;
 use craft\commerce\services\OrderAdjustments;
 use craft\commerce\services\ShippingMethods;
+use craft\db\Query;
 use craft\events\DefineAttributeHtmlEvent;
 use craft\events\DefineBehaviorsEvent;
 use craft\events\ModelEvent;
@@ -80,6 +82,10 @@ class Plugin extends BasePlugin
 
     /** Whether the request completes an order without paying, such as a free order. */
     private bool $_completing = false;
+
+    /** Whether this request saves the cart form, and asks for a slot. */
+    private bool $_cartForm = false;
+    private bool $_slotRequired = false;
 
     public static function config(): array
     {
@@ -164,8 +170,15 @@ class Plugin extends BasePlugin
         // Choosing a slot with the cart form: <input name="deliverySlot" value="{{ slot.value }}">.
         Event::on(CartController::class, Controller::EVENT_BEFORE_ACTION, function(ActionEvent $event) {
             if ($event->action->id === 'update-cart') {
-                $slot = Craft::$app->getRequest()->getBodyParam('deliverySlot');
+                $request = Craft::$app->getRequest();
+                $slot = $request->getBodyParam('deliverySlot');
                 $this->_postedSlot = is_string($slot) ? $slot : null;
+                $this->_cartForm = true;
+                // The picker asks for a slot, except while the customer is changing their address.
+                $this->_slotRequired = (bool)$request->getBodyParam('deliverySlotRequired')
+                    && $request->getBodyParam('shippingAddress') === null
+                    && $request->getBodyParam('shippingAddressId') === null
+                    && $request->getBodyParam('estimatedShippingAddress') === null;
             }
         });
 
@@ -173,13 +186,34 @@ class Plugin extends BasePlugin
             /** @var Order $order */
             $order = $event->sender;
             // A new cart is chosen for once it's saved and has an ID, below.
-            if ($this->_postedSlot === null || $order->isCompleted || !$order->id) {
+            if (!$this->_cartForm || $order->isCompleted || !$order->id) {
                 return;
             }
+            $this->_cartForm = false;
             $value = $this->_postedSlot;
+            $required = $this->_slotRequired;
             $this->_postedSlot = null;
-            if (($error = $this->slots->choose($order, $value)) !== null) {
-                $order->addError('deliverySlot', $error);
+            $this->_slotRequired = false;
+
+            if ($this->methodChanged($order)) {
+                // The time held for the method being left is let go. The form still posts it; it's kept only if the new
+                // method offers the same time, as a checkout that posts both at once may intend.
+                $this->slots->release($order);
+                if ($value !== null && $value !== '') {
+                    $this->slots->choose($order, $value);
+                }
+                return;
+            }
+            if ($value !== null) {
+                if (($error = $this->slots->choose($order, $value)) !== null) {
+                    $order->addError('deliverySlot', $error);
+                    $event->isValid = false;
+                }
+                return;
+            }
+            $this->slots->recheck($order);
+            if ($required && $this->slots->hasSlots($order) && !$this->slots->getBooking($order)) {
+                $order->addError('deliverySlot', Craft::t('delivery-slots', 'Choose a delivery time.'));
                 $event->isValid = false;
             }
         });
@@ -266,6 +300,16 @@ class Plugin extends BasePlugin
             }
             $event->setShippingMethods($methods);
         });
+    }
+
+    /**
+     * Whether this save changes the cart's shipping method.
+     */
+    private function methodChanged(Order $order): bool
+    {
+        $before = (new Query())->select('shippingMethodHandle')->from(CommerceTable::ORDERS)->where(['id' => $order->id])->scalar();
+
+        return (string)$before !== (string)$order->shippingMethodHandle;
     }
 
     private function registerControlPanel(): void
