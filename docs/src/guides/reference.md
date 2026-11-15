@@ -12,6 +12,7 @@ Delivery Slots adds these to every Commerce order and cart:
 | `cart.getHasDeliverySlots('handle')` | Whether another shipping method has slots |
 | `cart.deliverySlot` | The chosen [slot](#delivery-slot), or `null` |
 | `cart.getFirstError('deliverySlot')` | Why the slot couldn’t be held or the order paid for |
+| `cart.deliverySlotAsap` | The [slot](#slot) “As soon as possible” would take, or `null`. Post `asap` as `deliverySlot` to choose it |
 | `cart.deliverySlotsNeedAddress` | Whether the times depend on an address the customer hasn’t entered yet |
 | `cart.deliverySlotsUnavailableMethods` | The shipping methods not offered because the address is outside all of their [zones](/guides/zones) |
 | `cart.getFirstNotice('deliverySlotUnavailable')` | Set when a new address means the chosen time isn’t offered there; its `message` says so |
@@ -56,6 +57,7 @@ Delivery Slots adds these to every Commerce order and cart:
 | `zoneName` | The zone’s name, a shipping or drawn zone, or `null` |
 | `fee` | The slot’s fee |
 | `isBooked` | `true` once the order is complete, `false` while it’s held |
+| `asap` | `true` when the customer chose as soon as possible |
 | `calendarUrl` | A link to download the slot as a calendar event (`.ics`). Works for completed orders |
 
 ## Form fields

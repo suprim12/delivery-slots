@@ -65,6 +65,13 @@
 		on: schedule.sameDay,
 	}) }}
 
+	{{ forms.lightswitchField({
+		label: 'As soon as possible'|t('delivery-slots'),
+		instructions: 'Offer “As soon as possible” above the times. The order takes the earliest free slot, and moves to the next one if it fills up before payment.'|t('delivery-slots'),
+		name: 'asap',
+		on: schedule.asap,
+	}) }}
+
 	{{ forms.textField({
 		label: 'Book at least'|t('delivery-slots'),
 		instructions: 'Hours before a slot starts that it can still be booked.'|t('delivery-slots'),

@@ -71,7 +71,7 @@ class Plugin extends BasePlugin
     public const PERMISSION_RUN_SHEET = 'deliverySlots-viewRunSheet';
     public const PERMISSION_SCHEDULES = 'deliverySlots-manageSchedules';
 
-    public string $schemaVersion = '1.1.0';
+    public string $schemaVersion = '1.2.0';
     public bool $hasCpSection = true;
 
     /** A slot posted with `commerce/cart/update-cart`, applied when the cart saves. */
@@ -279,6 +279,7 @@ class Plugin extends BasePlugin
                 'end' => $slot->end,
                 'fee' => $slot->fee,
                 'zoneId' => $slot->zoneId,
+                'asap' => $slot->asap,
                 'isBooked' => $slot->getIsBooked(),
             ] : null;
             $event->cartInfo['hasDeliverySlots'] = $this->slots->hasSlots($event->cart);

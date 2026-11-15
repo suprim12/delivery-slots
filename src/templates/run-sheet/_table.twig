@@ -20,7 +20,7 @@
 				{% for row in group.rows %}
 					<tr>
 						<td>{% if printView ?? false %}{{ row.reference }}{% else %}<a href="{{ row.order.cpEditUrl }}">{{ row.reference }}</a>{% endif %}</td>
-						<td>{{ row.name }}{% if row.phone or row.email %}<div class="light smalltext">{{ row.phone ?: row.email }}</div>{% endif %}</td>
+						<td>{{ row.name }}{% if row.asap %} <span class="light smalltext">· {{ 'As soon as possible'|t('delivery-slots') }}</span>{% endif %}{% if row.phone or row.email %}<div class="light smalltext">{{ row.phone ?: row.email }}</div>{% endif %}</td>
 						<td>{{ row.address }}{% if row.locality %}, {{ row.locality }}{% endif %}{% if row.postcode %} {{ row.postcode }}{% endif %}</td>
 						<td>{{ row.zone ?: '—' }}</td>
 						<td>{{ row.items }}</td>

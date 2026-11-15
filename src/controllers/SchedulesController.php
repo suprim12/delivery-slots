@@ -123,6 +123,7 @@ class SchedulesController extends Controller
         $schedule->setSettings([
             'windows' => $request->getBodyParam('windows') ?: [],
             'sameDay' => $request->getBodyParam('sameDay'),
+            'asap' => $request->getBodyParam('asap'),
             'leadHours' => $request->getBodyParam('leadHours'),
             'cutoff' => $request->getBodyParam('cutoff'),
             'daysAhead' => $request->getBodyParam('daysAhead'),

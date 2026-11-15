@@ -40,6 +40,9 @@ class DeliverySlot extends Model
 
     /** The zone’s name when the slot was chosen. */
     public ?string $zoneName = null;
+
+    /** Whether the customer asked for as soon as possible, and was given this, the earliest free time. */
+    public bool $asap = false;
     public float $fee = 0.0;
     public string $status = BookingRecord::STATUS_HELD;
     public ?DateTime $expiresAt = null;
@@ -56,6 +59,7 @@ class DeliverySlot extends Model
             'zoneId' => $record->zoneId,
             'zoneKey' => $record->zoneKey,
             'zoneName' => $record->zoneName,
+            'asap' => (bool)$record->asap,
             'fee' => (float)$record->fee,
             'status' => $record->status,
             'expiresAt' => $record->expiresAt ? DateTimeHelper::toDateTime($record->expiresAt) ?: null : null,

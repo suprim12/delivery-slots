@@ -42,6 +42,7 @@ class Install extends Migration
                 'zoneId' => $this->integer(),
                 'zoneKey' => $this->string(64),
                 'zoneName' => $this->string(),
+                'asap' => $this->boolean()->notNull()->defaultValue(false),
                 'fee' => $this->decimal(14, 4)->notNull()->defaultValue(0),
                 'status' => $this->string(10)->notNull()->defaultValue(BookingRecord::STATUS_HELD),
                 'expiresAt' => $this->dateTime(),

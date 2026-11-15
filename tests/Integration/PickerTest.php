@@ -25,9 +25,9 @@ class PickerTest extends TestCase
         $html = $this->picker();
 
         $this->assertStringNotContainsString('data-slots', $html, 'No second step for the time.');
-        $this->assertMatchesRegularExpression('/<label class="ds-day">\s*<input type="radio" name="deliverySlot" value="2026-11-18@10:00"\s+checked>/', $html);
+        $this->assertMatchesRegularExpression('/<label class="ds-day"[^>]*>\s*<input type="radio" name="deliverySlot" value="2026-11-18@10:00"\s+checked>/', $html);
         $this->assertStringContainsString('10am – 4pm', $html);
-        $this->assertMatchesRegularExpression('/ds-off">\s*<small>Sun<\/small>\s*<b>22 Nov<\/b>\s*<small>Closed<\/small>/', $html);
+        $this->assertMatchesRegularExpression('/ds-off"[^>]*>\s*<small>Sun<\/small>\s*<b>22 Nov<\/b>\s*<small>Closed<\/small>/', $html);
     }
 
     public function testSeveralWindowsKeepTheTimes(): void

@@ -1,4 +1,34 @@
 {# The ready-made slot picker: {{ craft.deliverySlots.picker() }} inside the checkout form. #}
+
+{# One day: a radio when choosing the day chooses its time, otherwise a button that shows the day's times. #}
+{% macro day(day, dayOnly, open, chosen, cart, inCalendar) %}
+	{% set label = inCalendar ? day.date|date('j') : day.date|date('j M') %}
+	{% set title = day.date|date('l j F') %}
+	{% if dayOnly %}
+		{% set slot = day.slots|first %}
+		{% if day.isAvailable %}
+			<label class="ds-day" title="{{ title }}">
+				<input type="radio" name="deliverySlot" value="{{ slot.value }}" {{ slot.value == chosen ? 'checked' }}>
+				{% if not inCalendar %}<small>{{ day.date|date('D') }}</small>{% endif %}
+				<b>{{ label }}</b>
+				<small class="{{ slot.isLow ? 'ds-low' }}">{{ slot.isLow ? '{n} left'|t('delivery-slots', {n: slot.left}) : (inCalendar ? (slot.fee ? '+' ~ slot.fee|currency(cart.currency) : '') : slot.label ~ (slot.fee ? ' +' ~ slot.fee|currency(cart.currency))) }}</small>
+			</label>
+		{% else %}
+			<span class="ds-day ds-off" title="{{ title }}: {{ day.unavailableReason ?? 'Full'|t('delivery-slots') }}">
+				{% if not inCalendar %}<small>{{ day.date|date('D') }}</small>{% endif %}
+				<b>{{ label }}</b>
+				<small>{{ day.unavailableReason ?? 'Full'|t('delivery-slots') }}</small>
+			</span>
+		{% endif %}
+	{% else %}
+		<button type="button" class="ds-day" data-day="{{ day.date|date('Y-m-d') }}" title="{{ title }}{{ day.unavailableReason ? ': ' ~ day.unavailableReason }}" aria-pressed="{{ day == open ? 'true' : 'false' }}" {{ not day.isAvailable ? 'disabled' }}>
+			{% if not inCalendar %}<small>{{ day.date|date('D') }}</small>{% endif %}
+			<b>{{ label }}</b>
+			<small>{{ day.unavailableReason ?? (day.slots|filter(s => s.isLow)|length ? 'Few left'|t('delivery-slots')) }}</small>
+		</button>
+	{% endif %}
+{% endmacro %}
+
 {% set unavailable = cart.deliverySlotsUnavailableMethods %}
 {% if cart.hasDeliverySlots or unavailable %}
 {% set id = 'ds-' ~ random() %}
@@ -20,87 +50,115 @@
 		<p class="ds-note">{{ 'Enter your address to see delivery times.'|t('delivery-slots') }}</p>
 	{% else %}
 		{% set days = cart.deliverySlotDays %}
-		{% set chosen = cart.deliverySlot.value ?? null %}
-		{% set openDay = days|filter(d => chosen and d.date|date('Y-m-d') == chosen|split('@')|first)|first
+		{% set booking = cart.deliverySlot %}
+		{% set chosenAsap = booking.asap ?? false %}
+		{# With as soon as possible chosen, no time is ticked below it. #}
+		{% set chosen = chosenAsap ? null : (booking.value ?? null) %}
+		{% set openDay = days|filter(d => booking and d.date|date('Y-m-d') == booking.value|split('@')|first)|first
 			?: days|filter(d => d.isAvailable)|first %}
 		{% if not openDay %}
 			<p class="ds-note">{{ 'There are no delivery times for this address. Choose another way to get your order, or another address.'|t('delivery-slots') }}</p>
 		{% else %}
 			{% if required %}<input type="hidden" name="deliverySlotRequired" value="1">{% endif %}
+
+			{% set asapSlot = cart.deliverySlotAsap %}
+			{% if asapSlot %}
+				<label class="ds-asap">
+					<input type="radio" name="deliverySlot" value="asap" {{ chosenAsap ? 'checked' }}>
+					<b>{{ 'As soon as possible'|t('delivery-slots') }}</b>
+					<small>{{ asapSlot.date|date('l j F') }}, {{ asapSlot.label }}{{ asapSlot.fee ? ' +' ~ asapSlot.fee|currency(cart.currency) }}</small>
+				</label>
+				<p class="ds-or">{{ 'Or choose a time'|t('delivery-slots') }}</p>
+			{% endif %}
+
 			{# When no day has more than one time, choosing the day is choosing the time. #}
 			{% set dayOnly = days|filter(d => d.slots|length > 1)|length == 0 %}
-			{% if dayOnly %}
-				<fieldset class="ds-days">
-					<legend class="ds-hide">{{ 'Day'|t('delivery-slots') }}</legend>
-					{% for day in days %}
-						{% set slot = day.slots|first %}
-						{% if day.isAvailable %}
-							<label class="ds-day">
-								<input type="radio" name="deliverySlot" value="{{ slot.value }}" {{ slot.value == chosen ? 'checked' }}>
-								<small>{{ day.date|date('D') }}</small>
-								<b>{{ day.date|date('j M') }}</b>
-								<small class="{{ slot.isLow ? 'ds-low' }}">{{ slot.isLow ? '{n} left'|t('delivery-slots', {n: slot.left}) : slot.label }}{{ slot.fee ? ' +' ~ slot.fee|currency(cart.currency) }}</small>
-							</label>
-						{% else %}
-							<span class="ds-day ds-off">
-								<small>{{ day.date|date('D') }}</small>
-								<b>{{ day.date|date('j M') }}</b>
-								<small>{{ day.unavailableReason ?? 'Full'|t('delivery-slots') }}</small>
-							</span>
-						{% endif %}
+			{# A month calendar for long schedules, a row of days otherwise. #}
+			{% set inCalendar = calendar is same as('auto') ? days|length > 14 : calendar %}
+
+			{% if inCalendar %}
+				<div class="ds-calendar" {{ dayOnly ? 'role="radiogroup"' }} aria-label="{{ 'Day'|t('delivery-slots') }}">
+					{% for month, monthDays in days|group(d => d.date|date('Y-m')) %}
+						{% set first = monthDays|first %}
+						<div class="ds-month" data-month="{{ month }}">
+							<div class="ds-month-head">
+								<button type="button" class="ds-prev" aria-label="{{ 'Previous month'|t('delivery-slots') }}" hidden>‹</button>
+								<b>{{ first.date|date('F Y') }}</b>
+								<button type="button" class="ds-next" aria-label="{{ 'Next month'|t('delivery-slots') }}" hidden>›</button>
+							</div>
+							<div class="ds-grid">
+								{% for i in 0..6 %}<span class="ds-wd" aria-hidden="true">{{ '2024-01-01'|date_modify('+' ~ i ~ ' days')|date('D') }}</span>{% endfor %}
+								{# Blanks before the first day, so it falls under its weekday. #}
+								{# Days since Monday. Craft's date filter localises 'N', so count from 'w' (0 is Sunday). #}
+								{% set blanks = ((first.date|date('w'))|number_format(0, '', '') + 6) % 7 %}
+								{% if blanks > 0 %}{% for i in 1..blanks %}<span aria-hidden="true"></span>{% endfor %}{% endif %}
+								{% for day in monthDays %}{{ _self.day(day, dayOnly, openDay, chosen, cart, true) }}{% endfor %}
+							</div>
+						</div>
 					{% endfor %}
-				</fieldset>
+				</div>
 			{% else %}
-			<div class="ds-days">
-				{% for day in days %}
-					<button type="button" class="ds-day" data-day="{{ loop.index }}" aria-pressed="{{ day == openDay ? 'true' : 'false' }}" {{ not day.isAvailable ? 'disabled' }}>
-						<small>{{ day.date|date('D') }}</small>
-						<b>{{ day.date|date('j M') }}</b>
-						<small>{{ day.unavailableReason ?? (day.slots|filter(s => s.isLow)|length ? 'Few left'|t('delivery-slots')) }}</small>
-					</button>
+				<div class="ds-days" {{ dayOnly ? 'role="radiogroup"' }} aria-label="{{ 'Day'|t('delivery-slots') }}">
+					{% for day in days %}{{ _self.day(day, dayOnly, openDay, chosen, cart, false) }}{% endfor %}
+				</div>
+			{% endif %}
+
+			{% if not dayOnly %}
+				{% for day in days|filter(d => d.isAvailable) %}
+					<fieldset class="ds-slots" data-slots="{{ day.date|date('Y-m-d') }}" {{ day != openDay ? 'hidden' }}>
+						<legend class="ds-hide">{{ day.date|date('l j F') }}</legend>
+						{% for slot in day.slots %}
+							<label class="ds-slot{{ slot.isFull ? ' ds-full' }}">
+								<input type="radio" name="deliverySlot" value="{{ slot.value }}" {{ slot.value == chosen ? 'checked' }} {{ slot.isFull ? 'disabled' }}>
+								<b>{{ slot.label }}</b>
+								{% if slot.isFull %}
+									<small>{{ 'Full'|t('delivery-slots') }}</small>
+								{% elseif slot.isLow %}
+									<small class="ds-low">{{ '{n} left'|t('delivery-slots', {n: slot.left}) }}</small>
+								{% elseif slot.fee %}
+									<small>+{{ slot.fee|currency(cart.currency) }}</small>
+								{% endif %}
+							</label>
+						{% endfor %}
+					</fieldset>
 				{% endfor %}
-			</div>
-			{% for day in days|filter(d => d.isAvailable) %}
-				<fieldset class="ds-slots" data-slots="{{ loop.index }}" {{ day != openDay ? 'hidden' }}>
-					<legend class="ds-hide">{{ day.date|date('l j F') }}</legend>
-					{% for slot in day.slots %}
-						<label class="ds-slot{{ slot.isFull ? ' ds-full' }}">
-							<input type="radio" name="deliverySlot" value="{{ slot.value }}" {{ slot.value == chosen ? 'checked' }} {{ slot.isFull ? 'disabled' }}>
-							<b>{{ slot.label }}</b>
-							{% if slot.isFull %}
-								<small>{{ 'Full'|t('delivery-slots') }}</small>
-							{% elseif slot.isLow %}
-								<small class="ds-low">{{ '{n} left'|t('delivery-slots', {n: slot.left}) }}</small>
-							{% elseif slot.fee %}
-								<small>+{{ slot.fee|currency(cart.currency) }}</small>
-							{% endif %}
-						</label>
-					{% endfor %}
-				</fieldset>
-			{% endfor %}
 			{% endif %}
 		{% endif %}
 	{% endif %}
 	{% endif %}
 </div>
-{% if (openDay ?? false) and not dayOnly %}
+{% if (openDay ?? false) and (not dayOnly or inCalendar) %}
 <script>
 (() => {
 	const root = document.getElementById({{ id|json_encode|raw }});
-	const days = root.querySelectorAll('.ds-day');
-	// Disabled days are left out of the slot groups, so match on the day's position among the open ones.
-	const open = [...days].filter((b) => !b.disabled);
-	open.forEach((button, i) => button.addEventListener('click', () => {
-		days.forEach((b) => b.setAttribute('aria-pressed', b === button ? 'true' : 'false'));
-		root.querySelectorAll('[data-slots]').forEach((group, j) => {
-			group.hidden = j !== i;
-			// A day with only one time left: choosing the day chooses it.
+	// Days with times: choosing a day shows its times, and a day with one time left chooses it.
+	const buttons = root.querySelectorAll('button.ds-day');
+	buttons.forEach((button) => button.addEventListener('click', () => {
+		buttons.forEach((b) => b.setAttribute('aria-pressed', b === button ? 'true' : 'false'));
+		root.querySelectorAll('[data-slots]').forEach((group) => {
+			group.hidden = group.dataset.slots !== button.dataset.day;
 			const left = group.querySelectorAll('input:not(:disabled)');
-			if (j === i && left.length === 1) {
+			if (!group.hidden && left.length === 1) {
 				left[0].checked = true;
 			}
 		});
 	}));
+	// The calendar shows one month at a time, starting with the chosen or first open day's.
+	const months = [...root.querySelectorAll('.ds-month')];
+	if (months.length > 1) {
+		const show = (i) => months.forEach((m, j) => {
+			m.hidden = j !== i;
+			m.querySelector('.ds-prev').hidden = false;
+			m.querySelector('.ds-next').hidden = false;
+			m.querySelector('.ds-prev').disabled = j === 0;
+			m.querySelector('.ds-next').disabled = j === months.length - 1;
+		});
+		months.forEach((m, i) => {
+			m.querySelector('.ds-prev').addEventListener('click', () => show(i - 1));
+			m.querySelector('.ds-next').addEventListener('click', () => show(i + 1));
+		});
+		show(Math.max(0, months.findIndex((m) => m.dataset.month === {{ openDay.date|date('Y-m')|json_encode|raw }})));
+	}
 })();
 </script>
 {% endif %}
@@ -111,6 +169,13 @@
 	.ds-note { margin: 0; color: var(--ds-muted); }
 	.ds-unavailable { margin: 0 0 12px; padding: 10px 12px; border-radius: 8px; background: #fdf6e7; color: #6b4a0b; }
 	.ds-error { margin: 0 0 12px; padding: 10px 12px; border-radius: 8px; background: #fdf1ee; color: #8a2a17; }
+	.ds-asap { display: block; position: relative; padding: 12px 14px; border: 1px solid var(--ds-line); border-radius: 8px; cursor: pointer; }
+	.ds-asap input { position: absolute; opacity: 0; }
+	.ds-asap b, .ds-asap small { display: block; }
+	.ds-asap small { font-size: 13px; color: var(--ds-muted); }
+	.ds-asap:has(input:checked) { border: 2px solid var(--ds-accent); padding: 11px 13px; }
+	.ds-asap:has(input:focus-visible) { outline: 2px solid var(--ds-accent); outline-offset: 2px; }
+	.ds-or { margin: 12px 0 8px; font-size: 13px; color: var(--ds-muted); }
 	.ds-days { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 8px; margin-bottom: 12px; }
 	.ds-day { padding: 8px 4px; border: 1px solid var(--ds-line); border-radius: 8px; background: #fff; color: inherit; font: inherit; cursor: pointer; }
 	.ds-day small, .ds-day b { display: block; }
@@ -118,12 +183,24 @@
 	.ds-day[aria-pressed="true"] { background: var(--ds-accent); border-color: var(--ds-accent); color: #fff; }
 	.ds-day[aria-pressed="true"] small { color: inherit; }
 	.ds-day:disabled, .ds-off { opacity: .5; cursor: not-allowed; }
-	fieldset.ds-days { margin: 0 0 12px; padding: 0; border: 0; min-width: 0; }
 	label.ds-day, .ds-off { position: relative; display: block; text-align: center; }
 	label.ds-day input { position: absolute; opacity: 0; }
 	label.ds-day:has(input:checked) { background: var(--ds-accent); border-color: var(--ds-accent); color: #fff; }
 	label.ds-day:has(input:checked) small { color: inherit; }
 	label.ds-day:has(input:focus-visible) { outline: 2px solid var(--ds-accent); outline-offset: 2px; }
+	.ds-calendar { margin-bottom: 12px; }
+	.ds-month[hidden] { display: none; }
+	.ds-month + .ds-month { margin-top: 16px; }
+	.ds-month-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+	.ds-month-head b { flex: 1; text-align: center; }
+	.ds-month-head button { width: 36px; height: 36px; border: 1px solid var(--ds-line); border-radius: 8px; background: #fff; color: inherit; font: inherit; font-size: 18px; cursor: pointer; }
+	.ds-month-head button:disabled { opacity: .3; cursor: default; }
+	.ds-month-head button[hidden] { visibility: hidden; display: block; }
+	.ds-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
+	.ds-wd { font-size: 11px; color: var(--ds-muted); text-align: center; padding-bottom: 2px; }
+	.ds-grid .ds-day { min-height: 54px; padding: 6px 2px; }
+	.ds-grid .ds-day b { font-size: 16px; }
+	.ds-grid .ds-day small { font-size: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 	.ds-slots { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; margin: 0; padding: 0; border: 0; }
 	.ds-slots[hidden] { display: none; }
 	.ds-slot { display: block; position: relative; padding: 10px 12px; border: 1px solid var(--ds-line); border-radius: 8px; cursor: pointer; }

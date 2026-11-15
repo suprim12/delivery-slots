@@ -23,6 +23,7 @@ use craft\db\ActiveRecord;
  * @property int|null $zoneId
  * @property string|null $zoneKey
  * @property string|null $zoneName
+ * @property bool $asap Whether the customer asked for as soon as possible
  * @property float|string $fee
  * @property string $status
  * @property string|null $expiresAt

@@ -168,12 +168,14 @@ class RunSheets extends Component
         if ($noteField) {
             $header[] = 'Note';
         }
+        $header[] = 'As soon as possible';
         $lines = [$header];
         foreach ($rows as $row) {
             $line = [$row['date'], $row['slot'], $row['reference'], $row['name'], $row['email'], $row['phone'], $row['address'], $row['locality'], $row['postcode'], $row['zone'], $row['items'], number_format((float)$row['total'], 2, '.', ''), $row['method']];
             if ($noteField) {
                 $line[] = $row['note'];
             }
+            $line[] = $row['asap'] ? 'Yes' : '';
             $lines[] = $line;
         }
 
@@ -249,6 +251,7 @@ class RunSheets extends Component
             'start' => $booking->start,
             'end' => $booking->end,
             'slot' => $booking->getTimeLabel(),
+            'asap' => $booking->asap,
             'reference' => $order->reference ?: $order->getShortNumber(),
             'name' => $address?->fullName ?: (string)$order->getCustomer()?->getName(),
             'email' => (string)$order->getEmail(),

@@ -36,6 +36,9 @@ class Schedule extends Model
     /** Whether customers can book a slot later today. */
     public bool $sameDay = false;
 
+    /** Whether to offer “As soon as possible”, which takes the earliest free slot. */
+    public bool $asap = false;
+
     /** Slots can be booked until this many hours before they start. */
     public int $leadHours = 2;
 
@@ -111,6 +114,7 @@ class Schedule extends Model
         return [
             'windows' => array_values($this->windows),
             'sameDay' => $this->sameDay,
+            'asap' => $this->asap,
             'leadHours' => $this->leadHours,
             'cutoff' => $this->cutoff,
             'daysAhead' => $this->daysAhead,
@@ -133,6 +137,7 @@ class Schedule extends Model
     public function setSettings(array $settings): void
     {
         $this->sameDay = (bool)($settings['sameDay'] ?? false);
+        $this->asap = (bool)($settings['asap'] ?? false);
         $this->leadHours = max(0, (int)($settings['leadHours'] ?? 2));
         $this->cutoff = self::time($settings['cutoff'] ?? null);
         $this->daysAhead = max(1, min(90, (int)($settings['daysAhead'] ?? 7)));

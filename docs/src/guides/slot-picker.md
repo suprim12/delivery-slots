@@ -14,6 +14,8 @@ It shows:
 
 - the days, as buttons, and the chosen day’s times as radio buttons, with *Full*, *2 left* and slot fees;
 - just the days, when no day has more than one time, such as a bakery open 10am to 4pm: choosing the day chooses its time;
+- a month calendar, with previous and next buttons, when the schedule shows more than 14 days;
+- *As soon as possible* above the times, with the time it would be, when the schedule [offers it](/getting-started/schedules#ordering-window);
 - the error when a slot can’t be held, such as when it has just filled up;
 - *Choose a delivery time* when the form is sent without one, so customers can’t go on to payment without a time;
 - a notice when a new address means the chosen time isn’t offered there any more;
@@ -28,6 +30,7 @@ Options:
   heading: 'When should we deliver?',  {# or false for none #}
   styles: false,                       {# leave the styling to you #}
   required: false,                     {# let the form save without a time #}
+  calendar: true,                      {# always a month calendar; false for a row of days #}
 }) }}
 ```
 
@@ -40,6 +43,22 @@ Its classes start with `ds-`, and its colours can be changed with CSS variables:
 Pass `cart` when your template has one from a failed form, as below, so the error shows.
 
 A time is only asked for when the form saves without changing the shipping method or the address, so a one-page checkout can still save its address first. Changing the shipping method lets go of the time held for the old one.
+
+## As soon as possible
+
+Post `asap` as `deliverySlot` to take the earliest free slot. `cart.deliverySlotAsap` is that slot, or `null` when the schedule doesn’t offer it or nothing is free:
+
+```twig
+{% set asap = cart.deliverySlotAsap %}
+{% if asap %}
+  <label>
+    <input type="radio" name="deliverySlot" value="asap" {{ cart.deliverySlot.asap ?? false ? 'checked' }}>
+    As soon as possible ({{ asap.date|date('l j F') }}, {{ asap.label }})
+  </label>
+{% endif %}
+```
+
+The booking is a normal slot with `asap` set, so it counts towards that slot’s limit and shows on the run sheet. If the time fills up before the customer pays, the order moves to the next earliest one instead of asking them to choose again.
 
 ## Your own markup
 

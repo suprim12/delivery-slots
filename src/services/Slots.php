@@ -41,6 +41,9 @@ class Slots extends Component
     /** The notice added when a held slot isn’t offered for the cart’s new address. */
     public const NOTICE_UNAVAILABLE = 'deliverySlotUnavailable';
 
+    /** Post this as `deliverySlot` for as soon as possible. */
+    public const ASAP = 'asap';
+
     /**
      * @event LeadHoursEvent How much notice an order needs, after any longer notice for the product types in it.
      */
@@ -221,6 +224,18 @@ class Slots extends Component
             $this->release($order);
             return null;
         }
+        // As soon as possible: the earliest slot that's free now.
+        $asap = trim($value) === self::ASAP;
+        if ($asap) {
+            if (!$order->id || !$order->getLineItems()) {
+                return Craft::t('delivery-slots', 'Add something to your cart first.');
+            }
+            $first = $this->getAsapSlot($order);
+            if ($first === null) {
+                return Craft::t('delivery-slots', 'There are no delivery times left. Choose another way to get your order.');
+            }
+            $value = $first->getValue();
+        }
         // An empty cart can't hold a place, so nobody can fill slots without shopping.
         if (!$order->id || !$order->getLineItems()) {
             return Craft::t('delivery-slots', 'Add something to your cart first.');
@@ -263,6 +278,7 @@ class Slots extends Component
             $record->zoneKey = $zone['key'] ?? null;
             $record->zoneName = $zone['name'] ?? null;
             $record->fee = $slot->fee;
+            $record->asap = $asap;
             $record->status = BookingRecord::STATUS_HELD;
             $record->expiresAt = Db::prepareDateForDb($this->holdUntil($holdMinutes));
             $record->save(false);
@@ -296,7 +312,7 @@ class Slots extends Component
         // Held again, for as long as paying may take, if it's still free.
         $minutes = $paying ? max(Plugin::getInstance()->getSettings()->holdMinutes, Plugin::getInstance()->getSettings()->paymentHoldMinutes) : null;
 
-        return $this->choose($order, $booking->getValue(), $minutes);
+        return $this->choose($order, $booking->asap ? self::ASAP : $booking->getValue(), $minutes);
     }
 
     /**
@@ -366,6 +382,10 @@ class Slots extends Component
             return;
         }
         $slot = $this->find($order, $booking->date, $booking->start);
+        if ($slot === null && $booking->asap && $this->choose($order, self::ASAP) === null) {
+            // Still as soon as possible, at the new address.
+            return;
+        }
         if ($slot === null) {
             $this->release($order);
             $order->addNotice(new OrderNotice([
@@ -379,8 +399,29 @@ class Slots extends Component
         $zone = $schedule ? Plugin::getInstance()->zones->match($schedule, $order) : null;
         if (($zone['key'] ?? null) !== $booking->zoneKey || $slot->fee != $booking->fee) {
             // Held again for the new zone; if it has just filled, payment asks for another time.
-            $this->choose($order, $booking->getValue());
+            $this->choose($order, $booking->asap ? self::ASAP : $booking->getValue());
         }
+    }
+
+    /**
+     * The slot “As soon as possible” would take: the earliest that isn't full, when the schedule offers it.
+     */
+    public function getAsapSlot(Order $order, ShippingMethod|string|null $method = null): ?Slot
+    {
+        $method = $this->method($order, $method);
+        $schedule = $method ? Plugin::getInstance()->schedules->getEnabled($method->id) : null;
+        if (!$schedule || !$schedule->asap) {
+            return null;
+        }
+        foreach ($this->getDays($order, $method) as $day) {
+            foreach ($day->slots as $slot) {
+                if (!$slot->getIsFull()) {
+                    return $slot;
+                }
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -451,7 +492,12 @@ class Slots extends Component
         $record->start = $window['start'];
         $record->end = $window['end'];
         $record->zoneId = $zone['zoneId'] ?? null;
-        $record->fee = $zone['fee'] ?? 0;
+        $record->zoneKey = $zone['key'] ?? null;
+        $record->zoneName = $zone['name'] ?? null;
+        $timeZone = new DateTimeZone(Craft::$app->getTimeZone());
+        [$h, $m] = array_map('intval', explode(':', $window['start']));
+        $record->fee = ($zone['fee'] ?? 0) + $schedule->feeFor($window, (new DateTimeImmutable($date, $timeZone))->setTime($h, $m), $this->now()->setTime(0, 0));
+        $record->asap = false;
         $record->status = $order->isCompleted ? BookingRecord::STATUS_BOOKED : BookingRecord::STATUS_HELD;
         $record->expiresAt = $order->isCompleted ? null : Db::prepareDateForDb($this->holdUntil());
         $record->save(false);

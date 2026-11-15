@@ -60,6 +60,15 @@ class OrderBehavior extends Behavior
     }
 
     /**
+     * The slot “As soon as possible” would take, when the schedule offers it and a slot is free. Post `asap` as
+     * `deliverySlot` to choose it.
+     */
+    public function getDeliverySlotAsap(?string $shippingMethodHandle = null): ?\suprim\deliveryslots\models\Slot
+    {
+        return Plugin::getInstance()->slots->getAsapSlot($this->owner, $shippingMethodHandle);
+    }
+
+    /**
      * Whether the shipping method delivers to zones and the customer hasn’t entered an address yet, so its times can’t
      * be shown. Show a message such as “Enter your address to see delivery times”.
      */

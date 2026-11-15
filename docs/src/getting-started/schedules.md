@@ -33,6 +33,7 @@ Windows don’t have to be the same length. Pickup is often hourly, and delivery
 |---|---|
 | **Next-day cut-off** | Orders for tomorrow close at this time today. With 8:00 PM, an order placed at 9pm on Monday can’t choose Tuesday. Leave it blank for no cut-off |
 | **Same-day slots** | Let customers choose a slot later today. Off by default |
+| **As soon as possible** | Offer “As soon as possible” above the times. The order takes the earliest free slot, and is marked on the run sheet |
 | **Book at least** | How many hours before a slot starts it can still be chosen. With 2 hours, the 2–4pm slot closes at noon |
 | **Show slots up to** | How many days ahead the picker shows |
 | **More notice for some products** | Product types that need more notice, such as cakes at 48 hours while bread needs 2. When the cart has several, the longest notice applies |
