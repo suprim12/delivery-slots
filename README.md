@@ -123,6 +123,16 @@ return [
 - **View the run sheet**
 - **Manage slot schedules**
 
+## Running the tests
+
+The tests boot the Craft and Commerce project Delivery Slots is installed in. Each test makes its own shipping method, schedule and carts, fixes the time, and removes everything afterwards. From the project root, with PHPUnit installed in the project:
+
+```bash
+php vendor/bin/phpunit -c plugins/delivery-slots/phpunit.xml.dist
+```
+
+The project needs at least one product variant to add to carts.
+
 ## Support
 
 Email [support@suprim.com.au](mailto:support@suprim.com.au).
