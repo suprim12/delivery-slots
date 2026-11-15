@@ -175,6 +175,7 @@ button.go { width: 100%; height: 48px; border: 0; border-radius: 10px; backgroun
 
 ## Variations
 
+- **The ready-made picker.** Replace the time card’s days and slots, the script and the day and slot styles with `{{ craft.deliverySlots.picker(cart, {heading: false}) }}`, and match its colours with `.ds-picker { --ds-accent: var(--brand); }`. See [The Slot Picker](/guides/slot-picker#the-ready-made-picker).
 - **A list instead of day tabs.** Leave out the script and the `hidden` attribute, and every day shows its slots under a heading, as in [The Slot Picker](/guides/slot-picker).
 - **Prices by slot.** With [zones](/guides/zones), `slot.fee` is the extra charge, shown here as “+$4.00”. See [Zone Days and Fees](/examples/zone-fees).
 - **Weekday names.** `day.date|date('D')` gives “Tue”; use `date('l')` for “Tuesday”.
