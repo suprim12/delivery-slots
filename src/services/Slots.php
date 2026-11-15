@@ -155,7 +155,8 @@ class Slots extends Component
         }
         $methods = [];
         foreach (\craft\commerce\Plugin::getInstance()->getShippingMethods()->getAllShippingMethods($order->storeId) as $method) {
-            if (!$method->id || !$method->getIsEnabled()) {
+            // Only methods the cart could otherwise use: their shipping rules match it, apart from the zones.
+            if (!$method->id || !$method->getIsEnabled() || !$method->matchOrder($order)) {
                 continue;
             }
             $schedule = Plugin::getInstance()->schedules->getEnabled($method->id);

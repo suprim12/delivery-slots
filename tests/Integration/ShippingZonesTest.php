@@ -205,5 +205,11 @@ class ShippingZonesTest extends TestCase
 
         $this->assertSame([], $ids($this->cart(true, $this->address('5067'))));
         $this->assertSame([], $this->plugin()->slots->getUnavailableMethods($this->cart()), 'Not before there’s an address.');
+
+        // A method whose rules don't take this cart isn't listed, wherever the address is.
+        $rule = Commerce::getInstance()->getShippingRules()->getAllShippingRulesByShippingMethodId($this->method->id)->first();
+        $rule->orderConditionFormula = 'false';
+        Commerce::getInstance()->getShippingRules()->saveShippingRule($rule);
+        $this->assertSame([], $ids($this->cart(true, $this->address('6000'))));
     }
 }
