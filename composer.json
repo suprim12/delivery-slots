@@ -13,7 +13,7 @@
     "email": "support@suprim.com.au",
     "issues": "https://github.com/suprim12/delivery-slots/issues?state=open",
     "source": "https://github.com/suprim12/delivery-slots",
-    "docs": "https://delivery-slots.suprim.com.au/",
+    "docs": "https://plugins.deliveryslots.suprim.com.au/",
     "rss": "https://github.com/suprim12/delivery-slots/releases.atom"
   },
   "require": {
@@ -42,7 +42,7 @@
     "class": "suprim\\deliveryslots\\Plugin",
     "developerUrl": "https://suprim.com.au",
     "developerEmail": "support@suprim.com.au",
-    "documentationUrl": "https://delivery-slots.suprim.com.au/",
+    "documentationUrl": "https://plugins.deliveryslots.suprim.com.au/",
     "changelogUrl": "https://raw.githubusercontent.com/suprim12/delivery-slots/main/CHANGELOG.md"
   },
   "scripts": {
